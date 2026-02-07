@@ -42,9 +42,6 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress --no-scripts
 
-      - name: Generate autoload files
-        run: composer dump-autoload
-
       - name: Check code style (Laravel Pint)
         run: ./vendor/bin/pint --test
         continue-on-error: true
@@ -145,9 +142,6 @@ jobs:
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress --no-scripts
-
-      - name: Generate autoload files
-        run: composer dump-autoload
 
       - name: Composer audit
         run: composer audit || true
