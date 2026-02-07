@@ -4,10 +4,13 @@ namespace Tests\Unit\Services;
 
 use App\Enums\SmsDepositStatus;
 use App\Services\Deposit\SmsDepositService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class SmsDepositServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     private SmsDepositService $service;
 
     protected function setUp(): void

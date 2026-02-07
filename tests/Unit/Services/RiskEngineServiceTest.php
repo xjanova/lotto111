@@ -4,10 +4,13 @@ namespace Tests\Unit\Services;
 
 use App\Enums\RiskLevel;
 use App\Services\Risk\RiskEngineService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class RiskEngineServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     private RiskEngineService $service;
 
     protected function setUp(): void
