@@ -36,7 +36,16 @@ Route::get('/health', function () {
 
 /*
 |--------------------------------------------------------------------------
-| Authenticated Routes - TODO: Implement controllers
+| Authenticated Routes (Sanctum)
 |--------------------------------------------------------------------------
 */
-// See docs/PRD.md for full API specification
+Route::middleware('auth:sanctum')->group(function () {
+    // Deposit
+    Route::prefix('deposit')->group(function () {
+        Route::get('/info', [\App\Http\Controllers\Api\DepositController::class, 'info']);
+        Route::post('/sms', [\App\Http\Controllers\Api\DepositController::class, 'createSmsDeposit']);
+        Route::get('/history', [\App\Http\Controllers\Api\DepositController::class, 'history']);
+        Route::get('/{id}/status', [\App\Http\Controllers\Api\DepositController::class, 'getStatus']);
+        Route::post('/{id}/cancel', [\App\Http\Controllers\Api\DepositController::class, 'cancel']);
+    });
+});
