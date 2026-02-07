@@ -1,0 +1,181 @@
+services:
+  # ────────────────────────────────────────
+  # Application
+  # ────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: development
+    container_name: lotto-app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=lotto
+      - DB_USERNAME=root
+      - DB_PASSWORD=password
+      - REDIS_HOST=redis
+      - CACHE_STORE=redis
+      - QUEUE_CONNECTION=redis
+      - SESSION_DRIVER=redis
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - lotto
+
+  # ────────────────────────────────────────
+  # Queue Worker
+  # ────────────────────────────────────────
+  queue:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: development
+    container_name: lotto-queue
+    restart: unless-stopped
+    command: php artisan queue:work redis --queue=high,default,low --sleep=3 --tries=3 --max-time=3600
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+    environment:
+      - APP_ENV=local
+      - DB_HOST=mysql
+      - DB_DATABASE=lotto
+      - DB_USERNAME=root
+      - DB_PASSWORD=password
+      - REDIS_HOST=redis
+      - QUEUE_CONNECTION=redis
+    depends_on:
+      - app
+    networks:
+      - lotto
+
+  # ────────────────────────────────────────
+  # Scheduler
+  # ────────────────────────────────────────
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: development
+    container_name: lotto-scheduler
+    restart: unless-stopped
+    command: php artisan schedule:work
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+    environment:
+      - APP_ENV=local
+      - DB_HOST=mysql
+      - DB_DATABASE=lotto
+      - DB_USERNAME=root
+      - DB_PASSWORD=password
+      - REDIS_HOST=redis
+    depends_on:
+      - app
+    networks:
+      - lotto
+
+  # ────────────────────────────────────────
+  # WebSocket (Reverb)
+  # ────────────────────────────────────────
+  reverb:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: development
+    container_name: lotto-reverb
+    restart: unless-stopped
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+    environment:
+      - APP_ENV=local
+      - DB_HOST=mysql
+      - DB_DATABASE=lotto
+      - DB_USERNAME=root
+      - DB_PASSWORD=password
+      - REDIS_HOST=redis
+    depends_on:
+      - app
+    networks:
+      - lotto
+
+  # ────────────────────────────────────────
+  # MySQL
+  # ────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: lotto-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: lotto
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/custom.cnf
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lotto
+
+  # ────────────────────────────────────────
+  # Redis
+  # ────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: lotto-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lotto
+
+  # ────────────────────────────────────────
+  # Mailpit (Email Testing)
+  # ────────────────────────────────────────
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: lotto-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"   # Web UI
+      - "1025:1025"   # SMTP
+    networks:
+      - lotto
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  lotto:
+    driver: bridge

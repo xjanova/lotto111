@@ -1,0 +1,70 @@
+# ────────────────────────────────────────
+# Laravel
+# ────────────────────────────────────────
+/vendor
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/bootstrap/cache/*.php
+
+# ────────────────────────────────────────
+# Environment
+# ────────────────────────────────────────
+.env
+.env.backup
+.env.production
+.env.staging
+.env.local
+
+# ────────────────────────────────────────
+# Testing
+# ────────────────────────────────────────
+/.phpunit.cache
+.phpunit.result.cache
+/coverage
+coverage.xml
+.pest-mutate-cache
+
+# ────────────────────────────────────────
+# IDE
+# ────────────────────────────────────────
+/.fleet
+/.idea
+/.vscode
+*.sublime-project
+*.sublime-workspace
+.phpactor.json
+
+# ────────────────────────────────────────
+# OS
+# ────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ────────────────────────────────────────
+# Debug / Logs
+# ────────────────────────────────────────
+npm-debug.log
+yarn-error.log
+storage/logs/*.log
+
+# ────────────────────────────────────────
+# Docker
+# ────────────────────────────────────────
+docker-compose.override.yml
+
+# ────────────────────────────────────────
+# Build artifacts
+# ────────────────────────────────────────
+*.map
+/public/mix-manifest.json
+
+# ────────────────────────────────────────
+# Misc
+# ────────────────────────────────────────
+Homestead.json
+Homestead.yaml
+auth.json

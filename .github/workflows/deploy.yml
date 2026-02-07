@@ -1,0 +1,118 @@
+name: Deploy
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    name: Deploy to ${{ github.event.inputs.environment || 'production' }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+
+      - name: Install dependencies (production)
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Create deployment artifact
+        run: |
+          tar -czf deployment.tar.gz \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='tests' \
+            --exclude='.github' \
+            --exclude='docker' \
+            --exclude='.env' \
+            --exclude='.env.example' \
+            --exclude='storage/logs/*' \
+            --exclude='storage/framework/cache/*' \
+            .
+
+      - name: Deploy to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          source: deployment.tar.gz
+          target: /tmp/
+
+      - name: Execute deployment script
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script: |
+            set -e
+
+            APP_DIR=${{ secrets.DEPLOY_PATH || '/var/www/lotto' }}
+            RELEASE_DIR="${APP_DIR}/releases/$(date +%Y%m%d%H%M%S)"
+
+            # Create release directory
+            mkdir -p "$RELEASE_DIR"
+
+            # Extract artifact
+            tar -xzf /tmp/deployment.tar.gz -C "$RELEASE_DIR"
+            rm /tmp/deployment.tar.gz
+
+            # Link shared resources
+            ln -sf "${APP_DIR}/shared/.env" "${RELEASE_DIR}/.env"
+            ln -sf "${APP_DIR}/shared/storage" "${RELEASE_DIR}/storage"
+
+            # Run artisan commands
+            cd "$RELEASE_DIR"
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan event:cache
+
+            # Switch symlink
+            ln -sfn "$RELEASE_DIR" "${APP_DIR}/current"
+
+            # Restart services
+            sudo systemctl reload php8.3-fpm
+            sudo supervisorctl restart lotto-queue:*
+            sudo supervisorctl restart lotto-reverb
+
+            # Cleanup old releases (keep last 5)
+            cd "${APP_DIR}/releases"
+            ls -dt */ | tail -n +6 | xargs -r rm -rf
+
+            echo "Deployment completed successfully!"

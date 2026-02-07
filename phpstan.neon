@@ -1,0 +1,19 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app/
+
+    level: 6
+
+    ignoreErrors:
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder#'
+        - '#Access to an undefined property App\\Models\\[a-zA-Z]+::\$[a-zA-Z_]+#'
+
+    excludePaths:
+        - app/Console/Kernel.php
+
+    checkMissingIterableValueType: false
+
+    reportUnmatchedIgnoredErrors: false
