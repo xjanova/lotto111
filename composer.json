@@ -20,13 +20,7 @@
                         "Thaiprompt\\SmsChecker\\": "laravel-plugin/src/"
                     }
                 },
-                "extra": {
-                    "laravel": {
-                        "providers": [
-                            "Thaiprompt\\SmsChecker\\SmsCheckerServiceProvider"
-                        ]
-                    }
-                },
+                "extra": {},
                 "require": {
                     "php": "^8.1",
                     "illuminate/support": "^10.0|^11.0|^12.0"
@@ -95,7 +89,9 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": []
+            "dont-discover": [
+                "thaiprompt/smschecker-laravel"
+            ]
         }
     },
     "config": {
