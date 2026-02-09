@@ -68,14 +68,14 @@ class DashboardController extends Controller
                 'time' => $d->created_at?->diffForHumans(),
             ])->toArray();
 
-        $recentBets = Ticket::with(['user:id,name', 'lotteryRound.lotteryType'])
+        $recentBets = Ticket::with(['user:id,name', 'round.lotteryType'])
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get()
             ->map(fn ($t) => [
                 'id' => $t->id,
                 'user' => $t->user?->name,
-                'lottery_type' => $t->lotteryRound?->lotteryType?->name ?? '-',
+                'lottery_type' => $t->round?->lotteryType?->name ?? '-',
                 'number' => $t->number ?? '-',
                 'amount' => (float) ($t->amount ?? $t->total_amount ?? 0),
                 'time' => $t->created_at?->diffForHumans(),
@@ -131,9 +131,14 @@ class DashboardController extends Controller
             $memberData[] = User::where('role', 'member')->whereDate('created_at', $date)->count();
         }
 
-        // Lottery type breakdown
-        $lotteryTypes = LotteryType::where('is_active', true)->pluck('name')->toArray();
-        $lotteryAmounts = array_fill(0, count($lotteryTypes), rand(1000, 50000)); // placeholder
+        // Lottery type breakdown (real data)
+        $activeLotteryTypes = LotteryType::where('is_active', true)->get();
+        $lotteryTypes = $activeLotteryTypes->pluck('name')->toArray();
+        $lotteryAmounts = $activeLotteryTypes->map(fn ($lt) =>
+            (float) Ticket::whereHas('round', fn ($q) => $q->where('lottery_type_id', $lt->id))
+                ->whereDate('created_at', '>=', now()->subDays(30))
+                ->sum('total_amount')
+        )->toArray();
         $colors = ['#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#ef4444', '#6366f1', '#84cc16'];
 
         return [

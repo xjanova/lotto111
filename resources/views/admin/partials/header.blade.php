@@ -49,7 +49,7 @@
                 <a href="{{ route('admin.settings.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">ตั้งค่าระบบ</a>
                 <a href="{{ route('admin.logs') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">บันทึกระบบ</a>
                 <div class="border-t border-gray-100 my-1"></div>
-                <form method="POST" action="{{ route('admin.dashboard') }}">
+                <form method="POST" action="{{ route('admin.logout') }}">
                     @csrf
                     <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">ออกจากระบบ</button>
                 </form>

@@ -46,7 +46,7 @@ class FinanceManageController extends Controller
 
         $transactions = collect($paginated->items())->map(fn ($d) => [
             'id' => $d->id, 'user' => $d->user?->name ?? '-', 'amount' => (float) $d->amount,
-            'fee' => 0, 'channel' => $d->channel ?? 'SMS', 'status' => $d->status,
+            'fee' => 0, 'channel' => $d->method ?? 'SMS', 'status' => $d->status,
             'created_at' => $d->created_at?->format('d/m/Y H:i'),
         ])->toArray();
 

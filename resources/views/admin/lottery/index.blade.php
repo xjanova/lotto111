@@ -92,6 +92,41 @@
         </div>
     </div>
 
+    {{-- Result Submit Modals --}}
+    @foreach($rounds ?? [] as $round)
+        @if(($round['status'] ?? '') === 'closed' && empty($round['result']))
+        <div id="result-modal-{{ $round['id'] }}" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onclick="if(event.target===this) this.classList.add('hidden')">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in">
+                <h3 class="text-lg font-semibold mb-4">กรอกผล: {{ $round['type_name'] ?? '' }} ({{ $round['round_code'] ?? '' }})</h3>
+                <form onsubmit="return submitResult(event, {{ $round['id'] }})" class="space-y-3">
+                    <div>
+                        <label class="text-sm text-gray-600 mb-1 block">3 ตัวบน</label>
+                        <input type="text" name="three_top" maxlength="3" pattern="\d{3}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono text-center text-lg tracking-widest" placeholder="xxx">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">2 ตัวบน</label>
+                            <input type="text" name="two_top" maxlength="2" pattern="\d{2}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono text-center text-lg tracking-widest" placeholder="xx">
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600 mb-1 block">2 ตัวล่าง</label>
+                            <input type="text" name="two_bottom" maxlength="2" pattern="\d{2}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono text-center text-lg tracking-widest" placeholder="xx">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-600 mb-1 block">3 ตัวล่าง</label>
+                        <input type="text" name="three_bottom" maxlength="3" pattern="\d{3}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono text-center text-lg tracking-widest" placeholder="xxx">
+                    </div>
+                    <div class="flex gap-3 mt-4">
+                        <button type="button" onclick="this.closest('.fixed').classList.add('hidden')" class="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">ยกเลิก</button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700">ยืนยันผล</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        @endif
+    @endforeach
+
     {{-- Create Round Modal --}}
     <div x-show="showCreateRound" x-cloak class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="showCreateRound=false">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in">
@@ -133,5 +168,33 @@
 @push('scripts')
 <script>
 function lotteryPage() { return { showCreateRound: false }; }
+async function submitResult(event, roundId) {
+    event.preventDefault();
+    const form = event.target;
+    const data = new FormData(form);
+    const results = {};
+    ['three_top','two_top','two_bottom','three_bottom'].forEach(k => {
+        const v = data.get(k);
+        if (v) results[k] = v;
+    });
+    if (!results.three_top && !results.two_bottom) {
+        alert('กรุณากรอกผลอย่างน้อย 3 ตัวบน หรือ 2 ตัวล่าง');
+        return false;
+    }
+    if (!confirm('ยืนยันการกรอกผลรอบนี้?')) return false;
+    try {
+        const res = await fetchApi('/admin/lottery/results/' + roundId, {
+            method: 'POST',
+            body: JSON.stringify({ results }),
+        });
+        if (res.success) {
+            alert(res.message || 'สำเร็จ');
+            location.reload();
+        } else {
+            alert(res.message || 'เกิดข้อผิดพลาด');
+        }
+    } catch (e) { alert('เกิดข้อผิดพลาด: ' + e.message); }
+    return false;
+}
 </script>
 @endpush
