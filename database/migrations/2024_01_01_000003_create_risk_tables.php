@@ -106,8 +106,8 @@ return new class extends Migration
         Schema::create('profit_snapshots', function (Blueprint $table) {
             $table->id();
             $table->string('period_type', 20);
-            $table->timestamp('period_start');
-            $table->timestamp('period_end');
+            $table->timestamp('period_start')->useCurrent();
+            $table->timestamp('period_end')->useCurrent();
             $table->decimal('total_bet_amount', 14, 2)->default(0);
             $table->decimal('total_payout', 14, 2)->default(0);
             $table->decimal('total_deposit', 14, 2)->default(0);
