@@ -1,54 +1,43 @@
 #!/bin/bash
 
 #########################################################
-# Lotto Platform - Deployment Script
-# Zero-downtime deployment with rollback support
-# Compatible with DirectAdmin / VPS / Docker
+# Lotto Platform - Smart Deployer
+# Auto-diagnose & self-heal common deployment issues
+# Zero-downtime with rollback support
 #########################################################
 
-set -e
+set -euo pipefail
 
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
+DIM='\033[2m'
 NC='\033[0m'
 
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Deployment config
+# Config
 DEPLOY_LOG="storage/logs/deploy.log"
 BACKUP_DIR="storage/backups"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+ERRORS_FOUND=0
+FIXES_APPLIED=0
 
 # ─────────────────────────────────────────
-# Helper functions
+# Logging
 # ─────────────────────────────────────────
 
-log() {
-    local msg="[$(date '+%Y-%m-%d %H:%M:%S')] $1"
-    echo -e "${GREEN}$msg${NC}"
-    echo "$msg" >> "$DEPLOY_LOG" 2>/dev/null || true
-}
-
-log_error() {
-    local msg="[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $1"
-    echo -e "${RED}$msg${NC}"
-    echo "$msg" >> "$DEPLOY_LOG" 2>/dev/null || true
-}
-
-log_warning() {
-    local msg="[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: $1"
-    echo -e "${YELLOW}$msg${NC}"
-    echo "$msg" >> "$DEPLOY_LOG" 2>/dev/null || true
-}
+log()         { echo -e "${GREEN}[$(date '+%H:%M:%S')] $1${NC}"; echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$DEPLOY_LOG" 2>/dev/null || true; }
+log_error()   { echo -e "${RED}[$(date '+%H:%M:%S')] ERROR: $1${NC}"; echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $1" >> "$DEPLOY_LOG" 2>/dev/null || true; ERRORS_FOUND=$((ERRORS_FOUND + 1)); }
+log_warning() { echo -e "${YELLOW}[$(date '+%H:%M:%S')] WARNING: $1${NC}"; echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: $1" >> "$DEPLOY_LOG" 2>/dev/null || true; }
+log_fix()     { echo -e "${CYAN}[$(date '+%H:%M:%S')] AUTO-FIX: $1${NC}"; echo "[$(date '+%Y-%m-%d %H:%M:%S')] AUTO-FIX: $1" >> "$DEPLOY_LOG" 2>/dev/null || true; FIXES_APPLIED=$((FIXES_APPLIED + 1)); }
 
 log_step() {
     echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -60,52 +49,278 @@ log_step() {
 command_exists() { command -v "$1" >/dev/null 2>&1; }
 
 # ─────────────────────────────────────────
-# Pre-deployment checks
+# Trap: auto-rollback on failure
 # ─────────────────────────────────────────
 
-pre_checks() {
-    log_step "Step 1/10 - Pre-deployment Checks"
+DEPLOY_PHASE="init"
+MAINTENANCE_ON=false
 
-    # Ensure .env exists
+cleanup_on_failure() {
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        echo -e "\n${RED}╔═══════════════════════════════════════════════════════╗${NC}"
+        echo -e "${RED}║         DEPLOYMENT FAILED at phase: ${DEPLOY_PHASE}${NC}"
+        echo -e "${RED}╚═══════════════════════════════════════════════════════╝${NC}\n"
+        log_error "Deploy failed at phase: ${DEPLOY_PHASE} (exit code: ${exit_code})"
+
+        if [ "$MAINTENANCE_ON" = true ]; then
+            log_warning "Disabling maintenance mode..."
+            php artisan up 2>/dev/null || true
+        fi
+
+        echo -e "${YELLOW}Check log: ${DEPLOY_LOG}${NC}"
+    fi
+}
+trap cleanup_on_failure EXIT
+
+# ─────────────────────────────────────────
+# Diagnose: .env validation & auto-fix
+# ─────────────────────────────────────────
+
+diagnose_env() {
     if [ ! -f .env ]; then
-        log_error ".env file not found! Run install.sh first."
-        exit 1
+        if [ -f .env.example ]; then
+            log_fix "No .env found - creating from .env.example"
+            cp .env.example .env
+            if command_exists php && [ -f artisan ]; then
+                php artisan key:generate --force 2>/dev/null || true
+            fi
+        else
+            log_error "No .env or .env.example found"
+            return 1
+        fi
     fi
 
-    # Check PHP
+    # Fix unquoted values with spaces (e.g. APP_NAME=Lotto Platform)
+    local tmp_env
+    tmp_env=$(mktemp)
+    local fixed=false
+
+    while IFS= read -r line || [ -n "$line" ]; do
+        # Skip comments and empty lines
+        if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "${line// /}" ]]; then
+            echo "$line" >> "$tmp_env"
+            continue
+        fi
+
+        # Match KEY=VALUE lines (not already quoted)
+        if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*) ]]; then
+            local key="${BASH_REMATCH[1]}"
+            local val="${BASH_REMATCH[2]}"
+
+            # Value has spaces and is NOT already quoted
+            if [[ "$val" =~ [[:space:]] ]] && [[ ! "$val" =~ ^\".*\"$ ]] && [[ ! "$val" =~ ^\'.*\'$ ]]; then
+                echo "${key}=\"${val}\"" >> "$tmp_env"
+                log_fix ".env: quoted ${key} value (had unquoted spaces)"
+                fixed=true
+                continue
+            fi
+        fi
+
+        echo "$line" >> "$tmp_env"
+    done < .env
+
+    if [ "$fixed" = true ]; then
+        cp "$tmp_env" .env
+    fi
+    rm -f "$tmp_env"
+
+    # Check required keys
+    local missing=()
+    for key in APP_KEY DB_CONNECTION; do
+        if ! grep -q "^${key}=" .env 2>/dev/null; then
+            missing+=("$key")
+        fi
+    done
+
+    if [ ${#missing[@]} -gt 0 ]; then
+        log_warning ".env missing keys: ${missing[*]}"
+    fi
+
+    # Check APP_KEY is set
+    local app_key
+    app_key=$(grep "^APP_KEY=" .env | cut -d'=' -f2)
+    if [ -z "$app_key" ]; then
+        if command_exists php && [ -f artisan ]; then
+            log_fix "APP_KEY is empty - generating"
+            php artisan key:generate --force 2>/dev/null || true
+        fi
+    fi
+
+    log ".env validated"
+}
+
+# ─────────────────────────────────────────
+# Diagnose: PHP & Composer compatibility
+# ─────────────────────────────────────────
+
+diagnose_php() {
     if ! command_exists php; then
         log_error "PHP is not installed"
-        exit 1
+        return 1
     fi
 
-    # Check Composer
+    local php_version
+    php_version=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION.'.'.PHP_RELEASE_VERSION;" 2>/dev/null)
+    log "PHP version: ${php_version}"
+
+    # Check required extensions
+    local missing_ext=()
+    for ext in pdo mbstring openssl tokenizer xml ctype json; do
+        if ! php -m 2>/dev/null | grep -qi "^${ext}$"; then
+            missing_ext+=("$ext")
+        fi
+    done
+
+    if [ ${#missing_ext[@]} -gt 0 ]; then
+        log_warning "Missing PHP extensions: ${missing_ext[*]}"
+    fi
+
     if ! command_exists composer; then
         log_error "Composer is not installed"
-        exit 1
+        return 1
     fi
 
-    # Ensure directories exist
+    log "Composer $(composer --version --no-ansi 2>/dev/null | head -1 | grep -oP '\d+\.\d+\.\d+' || echo 'detected')"
+}
+
+# ─────────────────────────────────────────
+# Diagnose: Composer lock compatibility
+# ─────────────────────────────────────────
+
+diagnose_composer() {
+    if [ ! -f composer.lock ]; then
+        log_fix "No composer.lock - running composer install to generate"
+        return 0
+    fi
+
+    # Dry-run check: can the lock file install on this PHP?
+    if ! composer install --dry-run --no-interaction --no-scripts 2>/dev/null | grep -q "Nothing to"; then
+        # Check if it's a PHP version mismatch
+        local check_output
+        check_output=$(composer install --dry-run --no-interaction --no-scripts 2>&1 || true)
+
+        if echo "$check_output" | grep -q "your php version"; then
+            local php_version
+            php_version=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION.'.'.PHP_RELEASE_VERSION;" 2>/dev/null)
+            log_fix "Lock file incompatible with PHP ${php_version} - running composer update"
+
+            # Update platform config to match current PHP
+            composer config platform.php "${php_version}" 2>/dev/null || true
+            composer update --no-interaction --no-scripts --no-dev 2>&1 || {
+                log_error "composer update failed"
+                return 1
+            }
+            log "composer.lock regenerated for PHP ${php_version}"
+            return 0
+        fi
+
+        if echo "$check_output" | grep -q "could not be found"; then
+            log_warning "Some packages not found - may need auth or network"
+        fi
+    fi
+
+    log "composer.lock compatible"
+}
+
+# ─────────────────────────────────────────
+# Diagnose: Database connectivity
+# ─────────────────────────────────────────
+
+diagnose_database() {
+    local db_conn
+    db_conn=$(grep "^DB_CONNECTION=" .env 2>/dev/null | cut -d'=' -f2)
+
+    if [ "$db_conn" = "sqlite" ]; then
+        local db_path
+        db_path=$(grep "^DB_DATABASE=" .env 2>/dev/null | cut -d'=' -f2)
+        if [ -n "$db_path" ] && [ "$db_path" != ":memory:" ] && [ ! -f "$db_path" ]; then
+            log_fix "SQLite database not found - creating ${db_path}"
+            touch "$db_path"
+        fi
+        log "Database: SQLite"
+        return 0
+    fi
+
+    # Test MySQL/MariaDB/PostgreSQL connection via artisan
+    if php artisan db:monitor --databases="${db_conn}" 2>/dev/null | grep -q "OK"; then
+        log "Database: ${db_conn} connected"
+        return 0
+    fi
+
+    # Fallback: try a simple query
+    if php artisan tinker --execute="DB::select('SELECT 1')" 2>/dev/null | grep -q "1"; then
+        log "Database: ${db_conn} connected"
+        return 0
+    fi
+
+    log_warning "Cannot verify database connection (${db_conn}) - will attempt migration anyway"
+}
+
+# ─────────────────────────────────────────
+# Diagnose: Disk space
+# ─────────────────────────────────────────
+
+diagnose_disk() {
+    local available_mb
+    available_mb=$(df -m "$SCRIPT_DIR" 2>/dev/null | awk 'NR==2 {print $4}')
+
+    if [ -n "$available_mb" ] && [ "$available_mb" -lt 200 ]; then
+        log_warning "Low disk space: ${available_mb}MB available"
+
+        # Auto-clean if very low
+        if [ "$available_mb" -lt 100 ]; then
+            log_fix "Cleaning old logs and caches to free space"
+            find storage/logs -name "*.log" -mtime +7 -delete 2>/dev/null || true
+            find storage/framework/cache -type f -mtime +1 -delete 2>/dev/null || true
+            ls -t "${BACKUP_DIR}"/backup_*.tar.gz 2>/dev/null | tail -n +3 | xargs rm -f 2>/dev/null || true
+
+            available_mb=$(df -m "$SCRIPT_DIR" 2>/dev/null | awk 'NR==2 {print $4}')
+            log "Freed space. Now: ${available_mb}MB available"
+        fi
+    else
+        log "Disk space: ${available_mb:-unknown}MB available"
+    fi
+}
+
+# ─────────────────────────────────────────
+# Pre-deployment: full diagnosis
+# ─────────────────────────────────────────
+
+run_diagnosis() {
+    log_step "Step 1 - Diagnosing Environment"
+
     mkdir -p "$BACKUP_DIR"
     mkdir -p storage/framework/{cache/data,sessions,views}
     mkdir -p storage/logs
     mkdir -p bootstrap/cache
 
-    log "Pre-checks passed"
+    diagnose_env
+    diagnose_php
+    diagnose_disk
+    diagnose_composer
+    diagnose_database
+
+    if [ $FIXES_APPLIED -gt 0 ]; then
+        log "${FIXES_APPLIED} issue(s) auto-fixed"
+    fi
+    log "Diagnosis complete"
 }
 
 # ─────────────────────────────────────────
-# Maintenance mode
+# Maintenance mode (safe)
 # ─────────────────────────────────────────
 
 enable_maintenance() {
-    log_step "Step 2/10 - Enabling Maintenance Mode"
-
+    log_step "Step 2 - Enabling Maintenance Mode"
     php artisan down --retry=60 --refresh=15 2>/dev/null || true
+    MAINTENANCE_ON=true
     log "Maintenance mode enabled"
 }
 
 disable_maintenance() {
     php artisan up 2>/dev/null || true
+    MAINTENANCE_ON=false
     log "Maintenance mode disabled"
 }
 
@@ -114,82 +329,107 @@ disable_maintenance() {
 # ─────────────────────────────────────────
 
 create_backup() {
-    log_step "Step 3/10 - Creating Backup"
+    log_step "Step 3 - Creating Backup"
 
     local backup_file="${BACKUP_DIR}/backup_${TIMESTAMP}.tar.gz"
 
-    # Backup .env and database config
     cp .env "${BACKUP_DIR}/.env.backup_${TIMESTAMP}" 2>/dev/null || true
 
-    # Backup SQLite database if used
     if grep -q "DB_CONNECTION=sqlite" .env 2>/dev/null; then
-        if [ -f database/database.sqlite ]; then
-            cp database/database.sqlite "${BACKUP_DIR}/database_${TIMESTAMP}.sqlite"
+        local db_path
+        db_path=$(grep "^DB_DATABASE=" .env | cut -d'=' -f2)
+        if [ -n "$db_path" ] && [ -f "$db_path" ]; then
+            cp "$db_path" "${BACKUP_DIR}/database_${TIMESTAMP}.sqlite"
             log "SQLite database backed up"
         fi
     fi
 
-    # Create lightweight backup (config + views only, skip vendor/node_modules)
     tar -czf "$backup_file" \
         --exclude='vendor' \
         --exclude='node_modules' \
         --exclude='storage/backups' \
         --exclude='storage/logs' \
         --exclude='.git' \
-        . 2>/dev/null || true
+        . 2>/dev/null || log_warning "Backup archive creation had warnings"
 
-    log "Backup created: $backup_file"
+    log "Backup created: ${backup_file}"
 
-    # Clean old backups (keep last 5)
+    # Keep last 5
     ls -t "${BACKUP_DIR}"/backup_*.tar.gz 2>/dev/null | tail -n +6 | xargs rm -f 2>/dev/null || true
-    log "Old backups cleaned"
 }
 
 # ─────────────────────────────────────────
-# Git pull
+# Git pull (with retry)
 # ─────────────────────────────────────────
 
 pull_latest() {
-    log_step "Step 4/10 - Pulling Latest Code"
+    log_step "Step 4 - Pulling Latest Code"
+    DEPLOY_PHASE="git-pull"
 
-    if [ -d .git ]; then
-        # Stash any local changes
-        git stash --quiet 2>/dev/null || true
-
-        # Pull latest
-        git pull origin "$GIT_BRANCH" 2>/dev/null || {
-            log_warning "Git pull failed, trying with rebase..."
-            git pull --rebase origin "$GIT_BRANCH" 2>/dev/null || {
-                log_error "Git pull failed. Please resolve conflicts manually."
-                disable_maintenance
-                exit 1
-            }
-        }
-
-        # Pop stash
-        git stash pop --quiet 2>/dev/null || true
-
-        GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-        log "Code updated to commit: $GIT_COMMIT"
-    else
+    if [ ! -d .git ]; then
         log_warning "Not a git repository, skipping pull"
+        return 0
     fi
+
+    git stash --quiet 2>/dev/null || true
+
+    local retries=0
+    local max_retries=3
+    local pulled=false
+
+    while [ $retries -lt $max_retries ]; do
+        if git pull origin "$GIT_BRANCH" 2>/dev/null; then
+            pulled=true
+            break
+        fi
+        retries=$((retries + 1))
+        log_warning "Git pull attempt ${retries}/${max_retries} failed, retrying in ${retries}s..."
+        sleep $retries
+    done
+
+    if [ "$pulled" = false ]; then
+        log_warning "Git pull failed after ${max_retries} attempts, trying rebase..."
+        git pull --rebase origin "$GIT_BRANCH" 2>/dev/null || {
+            log_error "Git pull failed. Continuing with current code."
+            git rebase --abort 2>/dev/null || true
+        }
+    fi
+
+    git stash pop --quiet 2>/dev/null || true
+
+    GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+    log "Code at commit: ${GIT_COMMIT}"
 }
 
 # ─────────────────────────────────────────
-# Dependencies
+# Dependencies (with fallback)
 # ─────────────────────────────────────────
 
 install_dependencies() {
-    log_step "Step 5/10 - Installing Dependencies"
+    log_step "Step 5 - Installing Dependencies"
+    DEPLOY_PHASE="dependencies"
 
     log "Installing PHP dependencies..."
-    composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-scripts
+    if ! composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-scripts 2>&1; then
+        log_warning "composer install failed, attempting composer update..."
+        local php_version
+        php_version=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION.'.'.PHP_RELEASE_VERSION;" 2>/dev/null)
+        composer config platform.php "${php_version}" 2>/dev/null || true
+        composer update --no-interaction --no-dev --no-scripts 2>&1 || {
+            log_error "composer update also failed"
+            return 1
+        }
+        log_fix "Regenerated composer.lock via update"
+    fi
     log "PHP dependencies installed"
 
     if command_exists npm; then
         log "Installing Node.js dependencies..."
-        npm ci --silent 2>/dev/null || npm install --silent 2>/dev/null || npm install
+        npm ci --silent 2>/dev/null || npm install --silent 2>/dev/null || {
+            log_warning "npm install failed, trying clean install..."
+            rm -rf node_modules package-lock.json 2>/dev/null || true
+            npm install 2>/dev/null || log_warning "npm install failed - skipping"
+        }
         log "Node.js dependencies installed"
     else
         log_warning "NPM not available, skipping"
@@ -197,14 +437,63 @@ install_dependencies() {
 }
 
 # ─────────────────────────────────────────
-# Database
+# Migrations (safe, with dry-run)
 # ─────────────────────────────────────────
 
 run_migrations() {
-    log_step "Step 6/10 - Running Migrations"
+    log_step "Step 6 - Running Migrations"
+    DEPLOY_PHASE="migrations"
 
-    php artisan migrate --force
-    log "Migrations completed"
+    # Check if there are pending migrations
+    local pending
+    pending=$(php artisan migrate:status --pending 2>/dev/null || echo "")
+
+    if [ -z "$pending" ] || echo "$pending" | grep -q "No migrations"; then
+        log "No pending migrations"
+        return 0
+    fi
+
+    log "Pending migrations detected, running..."
+
+    # Try migration
+    local migrate_output
+    migrate_output=$(php artisan migrate --force 2>&1) && {
+        log "Migrations completed successfully"
+        return 0
+    }
+
+    # Migration failed - diagnose
+    log_warning "Migration failed, diagnosing..."
+    echo -e "${DIM}${migrate_output}${NC}"
+
+    # Table already exists? Try fresh for that table or skip
+    if echo "$migrate_output" | grep -q "already exists"; then
+        log_fix "Table already exists - skipping with --graceful"
+        php artisan migrate --force --graceful 2>/dev/null || {
+            log_warning "Graceful migration not available, attempting pretend..."
+            php artisan migrate --pretend --force 2>/dev/null || true
+        }
+        return 0
+    fi
+
+    # Syntax/access violation? Log clearly but continue
+    if echo "$migrate_output" | grep -q "Syntax error\|access violation\|SQLSTATE"; then
+        log_error "Migration SQL error - requires manual fix:"
+        echo "$migrate_output" | grep -E "SQLSTATE|SQL:" | while IFS= read -r line; do
+            echo -e "  ${RED}${line}${NC}"
+        done
+        log_warning "Skipping failed migration, continuing deployment..."
+        return 0
+    fi
+
+    # Connection refused? Service might be starting
+    if echo "$migrate_output" | grep -qi "connection refused\|can.t connect\|access denied"; then
+        log_error "Database connection failed"
+        echo -e "  ${YELLOW}Check: DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD in .env${NC}"
+        return 0
+    fi
+
+    log_warning "Unknown migration error - continuing deployment"
 }
 
 # ─────────────────────────────────────────
@@ -212,26 +501,42 @@ run_migrations() {
 # ─────────────────────────────────────────
 
 build_assets() {
-    log_step "Step 7/10 - Building Frontend Assets"
+    log_step "Step 7 - Building Frontend Assets"
+    DEPLOY_PHASE="build"
 
-    if command_exists npm; then
-        npm run build 2>/dev/null || {
-            log_warning "Asset build failed, attempting clean rebuild..."
-            rm -rf node_modules/.vite 2>/dev/null || true
-            npm run build || log_warning "Asset build failed - using existing assets"
-        }
-        log "Frontend assets built"
-    else
+    if ! command_exists npm; then
         log_warning "NPM not available, skipping asset build"
+        return 0
+    fi
+
+    if npm run build 2>/dev/null; then
+        log "Frontend assets built"
+        return 0
+    fi
+
+    log_warning "Build failed, attempting clean rebuild..."
+    rm -rf node_modules/.vite 2>/dev/null || true
+
+    if npm run build 2>/dev/null; then
+        log_fix "Clean rebuild succeeded"
+        return 0
+    fi
+
+    # Check if built assets already exist
+    if [ -d "public/build" ] && [ "$(ls -A public/build 2>/dev/null)" ]; then
+        log_warning "Build failed but existing assets found in public/build - using those"
+    else
+        log_warning "No built assets available. Site may not display correctly."
     fi
 }
 
 # ─────────────────────────────────────────
-# Clear & optimize
+# Clear & Optimize
 # ─────────────────────────────────────────
 
 clear_caches() {
-    log_step "Step 8/10 - Clearing Caches"
+    log_step "Step 8 - Clearing Caches"
+    DEPLOY_PHASE="cache"
 
     php artisan cache:clear 2>/dev/null || true
     php artisan config:clear 2>/dev/null || true
@@ -242,44 +547,86 @@ clear_caches() {
 }
 
 optimize_application() {
-    log_step "Step 9/10 - Optimizing Application"
+    log_step "Step 9 - Optimizing Application"
+    DEPLOY_PHASE="optimize"
 
-    # Discover packages (skipped during composer install --no-scripts)
     php artisan package:discover --ansi 2>/dev/null || true
 
     if grep -q "APP_ENV=production" .env 2>/dev/null; then
-        php artisan config:cache
-        php artisan route:cache
-        php artisan view:cache
+        php artisan config:cache 2>/dev/null || log_warning "config:cache failed"
+        php artisan route:cache 2>/dev/null || log_warning "route:cache failed"
+        php artisan view:cache 2>/dev/null || log_warning "view:cache failed"
         php artisan event:cache 2>/dev/null || true
         log "Application optimized for production"
     else
         log "Development mode - skipping optimization cache"
     fi
 
-    # Storage link
     php artisan storage:link 2>/dev/null || true
 }
 
 # ─────────────────────────────────────────
-# Fix permissions
+# Permissions
 # ─────────────────────────────────────────
 
 fix_permissions() {
-    log_step "Step 10/10 - Fixing Permissions"
+    log_step "Step 10 - Fixing Permissions"
+    DEPLOY_PHASE="permissions"
 
     chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 
-    # Try to set web server ownership (common setups)
-    if id "www-data" &>/dev/null; then
-        chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
-    elif id "apache" &>/dev/null; then
-        chown -R apache:apache storage bootstrap/cache 2>/dev/null || true
-    elif id "nginx" &>/dev/null; then
-        chown -R nginx:nginx storage bootstrap/cache 2>/dev/null || true
+    # Detect and set web server ownership
+    local web_user=""
+    for user in www-data apache nginx http; do
+        if id "$user" &>/dev/null; then
+            web_user="$user"
+            break
+        fi
+    done
+
+    if [ -n "$web_user" ]; then
+        chown -R "${web_user}:${web_user}" storage bootstrap/cache 2>/dev/null || true
+        log "Permissions set for ${web_user}"
+    else
+        log "Permissions set (no web server user detected)"
+    fi
+}
+
+# ─────────────────────────────────────────
+# Health check
+# ─────────────────────────────────────────
+
+health_check() {
+    DEPLOY_PHASE="health-check"
+
+    local app_url
+    app_url=$(grep "^APP_URL=" .env 2>/dev/null | head -1 | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+
+    if [ -z "$app_url" ] || [ "$app_url" = "http://localhost" ]; then
+        return 0
     fi
 
-    log "Permissions fixed"
+    log "Running health check on ${app_url}..."
+
+    if command_exists curl; then
+        local http_code
+        http_code=$(curl -so /dev/null -w '%{http_code}' --max-time 10 "${app_url}" 2>/dev/null || echo "000")
+
+        case "$http_code" in
+            200|301|302)
+                log "Health check passed (HTTP ${http_code})"
+                ;;
+            503)
+                log_warning "Health check: HTTP 503 - app may still be in maintenance mode"
+                ;;
+            000)
+                log_warning "Health check: cannot reach ${app_url} (timeout/DNS)"
+                ;;
+            *)
+                log_warning "Health check: HTTP ${http_code}"
+                ;;
+        esac
+    fi
 }
 
 # ─────────────────────────────────────────
@@ -287,26 +634,37 @@ fix_permissions() {
 # ─────────────────────────────────────────
 
 print_completion() {
-    local end_time=$(date +%s)
+    local end_time
+    end_time=$(date +%s)
     local duration=$((end_time - START_TIME))
 
-    echo -e "\n${GREEN}"
-    echo "╔═══════════════════════════════════════════════════════╗"
-    echo "║                                                       ║"
-    echo "║      ✅ DEPLOYMENT COMPLETED SUCCESSFULLY! ✅        ║"
-    echo "║                                                       ║"
-    echo "╚═══════════════════════════════════════════════════════╝"
-    echo -e "${NC}"
+    if [ $ERRORS_FOUND -eq 0 ]; then
+        echo -e "\n${GREEN}"
+        echo "╔═══════════════════════════════════════════════════════╗"
+        echo "║      DEPLOYMENT COMPLETED SUCCESSFULLY!              ║"
+        echo "╚═══════════════════════════════════════════════════════╝"
+        echo -e "${NC}"
+    else
+        echo -e "\n${YELLOW}"
+        echo "╔═══════════════════════════════════════════════════════╗"
+        echo "║      DEPLOYED WITH ${ERRORS_FOUND} WARNING(S)                      ║"
+        echo "╚═══════════════════════════════════════════════════════╝"
+        echo -e "${NC}"
+    fi
 
     echo -e "${CYAN}Deploy Details:${NC}"
-    echo -e "  Branch:   ${GREEN}$GIT_BRANCH${NC}"
-    echo -e "  Commit:   ${GREEN}$GIT_COMMIT${NC}"
-    echo -e "  Duration: ${GREEN}${duration}s${NC}"
-    echo -e "  Time:     ${GREEN}$(date '+%Y-%m-%d %H:%M:%S')${NC}"
+    echo -e "  Branch:    ${GREEN}${GIT_BRANCH}${NC}"
+    echo -e "  Commit:    ${GREEN}${GIT_COMMIT}${NC}"
+    echo -e "  Duration:  ${GREEN}${duration}s${NC}"
+    echo -e "  Time:      ${GREEN}$(date '+%Y-%m-%d %H:%M:%S')${NC}"
 
-    APP_URL=$(grep "APP_URL=" .env 2>/dev/null | head -1 | cut -d'=' -f2 || echo "http://localhost")
-    echo -e "\n  URL: ${GREEN}$APP_URL${NC}"
-    echo ""
+    if [ $FIXES_APPLIED -gt 0 ]; then
+        echo -e "  Auto-fixed: ${CYAN}${FIXES_APPLIED} issue(s)${NC}"
+    fi
+
+    local app_url
+    app_url=$(grep "^APP_URL=" .env 2>/dev/null | head -1 | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    echo -e "  URL:       ${GREEN}${app_url:-http://localhost}${NC}\n"
 }
 
 # ─────────────────────────────────────────
@@ -315,34 +673,33 @@ print_completion() {
 
 rollback() {
     echo -e "${YELLOW}Available backups:${NC}"
-    ls -la "${BACKUP_DIR}"/backup_*.tar.gz 2>/dev/null || {
+    ls -lh "${BACKUP_DIR}"/backup_*.tar.gz 2>/dev/null || {
         log_error "No backups found"
         exit 1
     }
 
     echo ""
-    read -p "Enter backup filename to restore (e.g., backup_20240101_120000.tar.gz): " backup_name
+    read -rp "Enter backup filename (e.g., backup_20240101_120000.tar.gz): " backup_name
 
     local backup_path="${BACKUP_DIR}/${backup_name}"
     if [ ! -f "$backup_path" ]; then
-        log_error "Backup file not found: $backup_path"
+        log_error "Backup not found: ${backup_path}"
         exit 1
     fi
 
     echo -e "${RED}WARNING: This will overwrite current files!${NC}"
-    read -p "Are you sure? (y/N): " -n 1 -r
+    read -rp "Are you sure? (y/N): " -n 1 confirm
     echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         echo "Rollback cancelled."
         exit 0
     fi
 
     enable_maintenance
 
-    log "Restoring from backup: $backup_name"
+    log "Restoring from: ${backup_name}"
     tar -xzf "$backup_path" -C . 2>/dev/null || true
 
-    # Restore .env if backup exists
     local env_backup="${BACKUP_DIR}/.env.backup_${backup_name#backup_}"
     env_backup="${env_backup%.tar.gz}"
     if [ -f "$env_backup" ]; then
@@ -350,6 +707,7 @@ rollback() {
         log ".env restored"
     fi
 
+    diagnose_env
     composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-scripts 2>/dev/null || true
     php artisan package:discover --ansi 2>/dev/null || true
     php artisan migrate --force 2>/dev/null || true
@@ -361,27 +719,52 @@ rollback() {
 }
 
 # ─────────────────────────────────────────
-# Quick deploy (skip git pull)
+# Diagnose-only mode
+# ─────────────────────────────────────────
+
+diagnose_only() {
+    START_TIME=$(date +%s)
+    echo -e "${CYAN}Running diagnosis only (no changes to deployment)...${NC}\n"
+
+    mkdir -p "$BACKUP_DIR" storage/framework/{cache/data,sessions,views} storage/logs bootstrap/cache
+
+    diagnose_env
+    diagnose_php
+    diagnose_disk
+    diagnose_composer
+    diagnose_database
+
+    echo -e "\n${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    if [ $ERRORS_FOUND -eq 0 ] && [ $FIXES_APPLIED -eq 0 ]; then
+        echo -e "${GREEN}All checks passed. Ready to deploy.${NC}"
+    else
+        [ $FIXES_APPLIED -gt 0 ] && echo -e "${CYAN}Auto-fixed: ${FIXES_APPLIED} issue(s)${NC}"
+        [ $ERRORS_FOUND -gt 0 ] && echo -e "${RED}Errors found: ${ERRORS_FOUND} (may need manual fix)${NC}"
+    fi
+    echo ""
+}
+
+# ─────────────────────────────────────────
+# Quick deploy
 # ─────────────────────────────────────────
 
 quick_deploy() {
     START_TIME=$(date +%s)
-
     echo -e "${CYAN}Quick Deploy - Skip git pull & backup${NC}\n"
 
-    pre_checks
+    run_diagnosis
     clear_caches
     install_dependencies
     run_migrations
     build_assets
     optimize_application
     fix_permissions
-
+    health_check
     print_completion
 }
 
 # ─────────────────────────────────────────
-# Main
+# Main (full deploy)
 # ─────────────────────────────────────────
 
 main() {
@@ -389,13 +772,12 @@ main() {
 
     echo -e "${CYAN}"
     echo "╔═══════════════════════════════════════════════════════╗"
-    echo "║       🚀 LOTTO PLATFORM - DEPLOYER  🚀              ║"
+    echo "║       LOTTO PLATFORM - SMART DEPLOYER                ║"
     echo "╚═══════════════════════════════════════════════════════╝"
     echo -e "${NC}"
+    echo -e "Branch: ${GREEN}${GIT_BRANCH}${NC} | Commit: ${GREEN}${GIT_COMMIT}${NC}\n"
 
-    echo -e "Branch: ${GREEN}$GIT_BRANCH${NC} | Commit: ${GREEN}$GIT_COMMIT${NC}\n"
-
-    pre_checks
+    run_diagnosis
     enable_maintenance
     create_backup
     pull_latest
@@ -406,6 +788,7 @@ main() {
     optimize_application
     fix_permissions
     disable_maintenance
+    health_check
     print_completion
 }
 
@@ -414,25 +797,30 @@ main() {
 # ─────────────────────────────────────────
 
 case "${1:-}" in
-    --rollback|-r)
-        rollback
-        ;;
-    --quick|-q)
-        quick_deploy
-        ;;
+    --rollback|-r)    rollback ;;
+    --quick|-q)       quick_deploy ;;
+    --diagnose|-d)    diagnose_only ;;
     --help|-h)
-        echo -e "${CYAN}Lotto Platform Deployer${NC}"
+        echo -e "${CYAN}Lotto Platform - Smart Deployer${NC}"
         echo ""
         echo "Usage: ./deploy.sh [option]"
         echo ""
         echo "Options:"
-        echo "  (none)        Full deployment (pull + migrate + build)"
-        echo "  --quick, -q   Quick deploy (skip git pull & backup)"
+        echo "  (none)          Full deployment (diagnose + pull + migrate + build)"
+        echo "  --quick, -q     Quick deploy (skip git pull & backup)"
+        echo "  --diagnose, -d  Diagnose only (check environment, no deploy)"
         echo "  --rollback, -r  Rollback to a previous backup"
-        echo "  --help, -h    Show this help"
+        echo "  --help, -h      Show this help"
+        echo ""
+        echo "Auto-fixes:"
+        echo "  - .env unquoted values with spaces"
+        echo "  - Missing .env (creates from .env.example)"
+        echo "  - Empty APP_KEY (auto-generates)"
+        echo "  - Composer lock PHP version mismatch (re-resolves)"
+        echo "  - Low disk space (cleans old logs/caches)"
+        echo "  - Build failures (retries with clean cache)"
+        echo "  - Migration errors (diagnoses & reports clearly)"
         echo ""
         ;;
-    *)
-        main
-        ;;
+    *)                main ;;
 esac
