@@ -27,6 +27,9 @@ jobs:
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite3, pdo_sqlite, gd, intl, bcmath
           tools: composer:v2
 
+      - name: Configure Composer GitHub auth
+        run: composer config --global github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress --no-scripts
 
