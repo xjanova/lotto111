@@ -1,5 +1,8 @@
 <?php
 
+use App\Enums\UserRole;
+use App\Enums\UserStatus;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +22,10 @@ Route::get('/', function () {
 |--------------------------------------------------------------------------
 */
 Route::get('/admin/login', function () {
+    if (! User::whereIn('role', [UserRole::Admin, UserRole::SuperAdmin])->exists()) {
+        return redirect()->route('admin.setup');
+    }
+
     return auth()->check() && auth()->user()->isAdmin()
         ? redirect()->route('admin.dashboard')
         : view('admin.login');
@@ -57,3 +64,44 @@ Route::post('/admin/logout', function () {
     request()->session()->regenerateToken();
     return redirect('/admin/login');
 })->middleware('auth')->name('admin.logout');
+
+/*
+|--------------------------------------------------------------------------
+| First-Time Admin Setup
+|--------------------------------------------------------------------------
+| Only accessible when no admin user exists in the database.
+*/
+Route::get('/admin/setup', function () {
+    if (User::whereIn('role', [UserRole::Admin, UserRole::SuperAdmin])->exists()) {
+        return redirect()->route('login');
+    }
+
+    return view('admin.setup');
+})->middleware('guest')->name('admin.setup');
+
+Route::post('/admin/setup', function (Request $request) {
+    if (User::whereIn('role', [UserRole::Admin, UserRole::SuperAdmin])->exists()) {
+        return redirect()->route('login');
+    }
+
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'phone' => 'required|string|max:20|unique:users,phone',
+        'email' => 'nullable|email|max:255|unique:users,email',
+        'password' => 'required|string|min:8|confirmed',
+    ]);
+
+    $user = User::create([
+        'name' => $validated['name'],
+        'phone' => $validated['phone'],
+        'email' => $validated['email'] ?? null,
+        'password' => $validated['password'],
+        'role' => UserRole::SuperAdmin,
+        'status' => UserStatus::Active,
+    ]);
+
+    auth()->login($user);
+    $request->session()->regenerate();
+
+    return redirect()->route('admin.dashboard');
+})->middleware('guest')->name('admin.setup.store');
