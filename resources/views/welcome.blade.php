@@ -89,11 +89,18 @@
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <a href="/admin/login" class="hidden sm:inline-flex btn-outline text-xs px-4 py-2.5 rounded-xl font-semibold">เข้าสู่ระบบ</a>
-                    <a href="#" class="btn-gold text-xs px-5 py-2.5 rounded-xl font-bold flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
-                        สมัครสมาชิก
-                    </a>
+                    @auth
+                        <span class="hidden sm:inline text-sm text-white/60">{{ auth()->user()->name }}</span>
+                        <form method="POST" action="/logout" class="inline">@csrf
+                            <button type="submit" class="hidden sm:inline-flex btn-outline text-xs px-4 py-2.5 rounded-xl font-semibold">ออกจากระบบ</button>
+                        </form>
+                    @else
+                        <a href="/login" class="hidden sm:inline-flex btn-outline text-xs px-4 py-2.5 rounded-xl font-semibold">เข้าสู่ระบบ</a>
+                        <a href="/register" class="btn-gold text-xs px-5 py-2.5 rounded-xl font-bold flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                            สมัครสมาชิก
+                        </a>
+                    @endauth
                     <button @click="mobileMenu = !mobileMenu" class="lg:hidden text-white/60 hover:text-white p-2">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                     </button>
@@ -106,7 +113,14 @@
             <a href="#results" @click="mobileMenu=false" class="block py-3 text-white/70 hover:text-gold-400 text-sm font-medium border-b border-white/5">ผลหวย</a>
             <a href="#features" @click="mobileMenu=false" class="block py-3 text-white/70 hover:text-gold-400 text-sm font-medium border-b border-white/5">บริการ</a>
             <a href="#contact" @click="mobileMenu=false" class="block py-3 text-white/70 hover:text-gold-400 text-sm font-medium">ติดต่อ</a>
-            <a href="/admin/login" class="block mt-3 text-center btn-outline text-xs px-4 py-2.5 rounded-xl font-semibold">เข้าสู่ระบบ</a>
+            @auth
+                <form method="POST" action="/logout" class="block mt-3">@csrf
+                    <button type="submit" class="w-full text-center btn-outline text-xs px-4 py-2.5 rounded-xl font-semibold">ออกจากระบบ</button>
+                </form>
+            @else
+                <a href="/login" class="block mt-3 text-center btn-outline text-xs px-4 py-2.5 rounded-xl font-semibold">เข้าสู่ระบบ</a>
+                <a href="/register" class="block mt-2 text-center btn-gold text-xs px-4 py-2.5 rounded-xl font-bold">สมัครสมาชิก</a>
+            @endauth
         </div>
     </nav>
 
@@ -140,7 +154,7 @@
                     </p>
 
                     <div class="animate-fade-up delay-300 flex flex-col sm:flex-row gap-3">
-                        <a href="#" class="btn-gold text-sm px-8 py-4 rounded-2xl text-center font-bold flex items-center justify-center gap-2">
+                        <a href="/register" class="btn-gold text-sm px-8 py-4 rounded-2xl text-center font-bold flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                             เริ่มเล่นเลย
                         </a>
@@ -427,11 +441,11 @@
                     <h2 class="text-3xl lg:text-4xl font-black text-white mb-4">พร้อมลุ้นโชคแล้วหรือยัง?</h2>
                     <p class="text-white/70 text-sm lg:text-base max-w-lg mx-auto mb-8">สมัครสมาชิกวันนี้ รับโบนัสฟรีทันที เริ่มแทงหวยได้เลย</p>
                     <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                        <a href="#" class="btn-gold text-sm px-8 py-4 rounded-2xl text-center font-bold inline-flex items-center justify-center gap-2">
+                        <a href="/register" class="btn-gold text-sm px-8 py-4 rounded-2xl text-center font-bold inline-flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
                             สมัครสมาชิกฟรี
                         </a>
-                        <a href="/admin/login" class="px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-sm font-semibold transition-all backdrop-blur-sm border border-white/10">เข้าสู่ระบบ</a>
+                        <a href="/login" class="px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-sm font-semibold transition-all backdrop-blur-sm border border-white/10">เข้าสู่ระบบ</a>
                     </div>
                 </div>
             </div>

@@ -2,6 +2,7 @@
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Http\Controllers\Web\AuthController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,17 @@ Route::get('/', function () {
 
 /*
 |--------------------------------------------------------------------------
+| Member Auth (web session - Firebase OTP)
+|--------------------------------------------------------------------------
+*/
+Route::get('/register', [AuthController::class, 'showRegister'])->middleware('guest')->name('register');
+Route::post('/register', [AuthController::class, 'register'])->middleware('guest');
+Route::get('/login', [AuthController::class, 'showLogin'])->middleware('guest')->name('member.login');
+Route::post('/login', [AuthController::class, 'login'])->middleware('guest');
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('member.logout');
+
+/*
+|--------------------------------------------------------------------------
 | Admin Auth (web session)
 |--------------------------------------------------------------------------
 */
@@ -48,7 +60,7 @@ Route::get('/admin/login', function () {
     return auth()->check() && auth()->user()->isAdmin()
         ? redirect()->route('admin.dashboard')
         : view('admin.login');
-})->middleware('guest')->name('login');
+})->middleware('guest')->name('admin.login');
 
 Route::post('/admin/login', function (Request $request) {
     $credentials = $request->validate([
@@ -92,7 +104,7 @@ Route::post('/admin/logout', function () {
 */
 Route::get('/admin/setup', function () {
     if (User::whereIn('role', [UserRole::Admin, UserRole::SuperAdmin])->exists()) {
-        return redirect()->route('login');
+        return redirect()->route('admin.login');
     }
 
     return view('admin.setup');
@@ -100,7 +112,7 @@ Route::get('/admin/setup', function () {
 
 Route::post('/admin/setup', function (Request $request) {
     if (User::whereIn('role', [UserRole::Admin, UserRole::SuperAdmin])->exists()) {
-        return redirect()->route('login');
+        return redirect()->route('admin.login');
     }
 
     $validated = $request->validate([
