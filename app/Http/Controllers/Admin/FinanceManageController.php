@@ -70,7 +70,7 @@ class FinanceManageController extends Controller
         }
 
         $deposit->update([
-            'status' => 'approved',
+            'status' => 'credited',
             'manual_matched_by' => $request->user()->id,
         ]);
 

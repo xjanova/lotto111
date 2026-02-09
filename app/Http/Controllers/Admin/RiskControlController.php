@@ -61,15 +61,19 @@ class RiskControlController extends Controller
             'active_alerts' => $activeAlerts,
         ];
 
-        $topWinners = Transaction::where('type', 'win')
+        $topWinnersRaw = Transaction::where('type', 'win')
             ->whereDate('created_at', today())
             ->selectRaw('user_id, SUM(amount) as total')
             ->groupBy('user_id')
             ->orderByDesc('total')
             ->limit(10)
-            ->get()
-            ->map(fn ($t) => [
-                'name' => User::find($t->user_id)?->name ?? '-',
+            ->get();
+
+        $winnerUserIds = $topWinnersRaw->pluck('user_id')->toArray();
+        $winnerUsers = User::whereIn('id', $winnerUserIds)->pluck('name', 'id');
+
+        $topWinners = $topWinnersRaw->map(fn ($t) => [
+                'name' => $winnerUsers[$t->user_id] ?? '-',
                 'amount' => (float) $t->total,
             ])->toArray();
 
@@ -139,7 +143,7 @@ class RiskControlController extends Controller
             'data' => [
                 'user' => [
                     'id' => $user->id,
-                    'username' => $user->username,
+                    'username' => $user->name,
                     'name' => $user->name,
                     'balance' => $user->balance,
                 ],
@@ -172,7 +176,7 @@ class RiskControlController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'อัพเดท Win Rate สำหรับ ' . $user->username . ' เรียบร้อย',
+            'message' => 'อัพเดท Win Rate สำหรับ ' . $user->name . ' เรียบร้อย',
         ]);
     }
 
@@ -199,7 +203,7 @@ class RiskControlController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'อัพเดท Rate Adjustment สำหรับ ' . $user->username . ' เรียบร้อย',
+            'message' => 'อัพเดท Rate Adjustment สำหรับ ' . $user->name . ' เรียบร้อย',
         ]);
     }
 
@@ -225,7 +229,7 @@ class RiskControlController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'อัพเดทเลขอั้นสำหรับ ' . $user->username . ' เรียบร้อย',
+            'message' => 'อัพเดทเลขอั้นสำหรับ ' . $user->name . ' เรียบร้อย',
         ]);
     }
 
@@ -258,7 +262,7 @@ class RiskControlController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'อัพเดท Bet Limits สำหรับ ' . $user->username . ' เรียบร้อย',
+            'message' => 'อัพเดท Bet Limits สำหรับ ' . $user->name . ' เรียบร้อย',
         ]);
     }
 

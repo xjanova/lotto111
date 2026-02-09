@@ -7,6 +7,7 @@ use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use App\Models\Deposit;
 use App\Services\Deposit\SmsDepositService;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -34,14 +35,21 @@ class SmsDepositController extends Controller
     /**
      * SMS Deposit Dashboard stats
      */
-    public function dashboard(): JsonResponse
+    public function dashboard(Request $request): View|JsonResponse
     {
         $stats = $this->depositService->getDashboardStats();
 
-        return response()->json([
-            'success' => true,
-            'data' => $stats,
-        ]);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => $stats,
+            ]);
+        }
+
+        $devices = SmsCheckerDevice::orderBy('created_at', 'desc')->get();
+        $pendingCount = Deposit::where('method', 'sms_auto')->where('status', 'waiting_transfer')->count();
+
+        return view('admin.sms-deposit.dashboard', compact('stats', 'devices', 'pendingCount'));
     }
 
     // ─────────────────────────────────────────
@@ -59,7 +67,7 @@ class SmsDepositController extends Controller
                 return [
                     'id' => $device->id,
                     'device_id' => $device->device_id,
-                    'device_name' => $device->device_name,
+                    'name' => $device->name,
                     'platform' => $device->platform,
                     'app_version' => $device->app_version,
                     'status' => $device->status,
@@ -83,7 +91,7 @@ class SmsDepositController extends Controller
     public function createDevice(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'device_name' => 'required|string|max:100',
+            'name' => 'required|string|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -95,7 +103,7 @@ class SmsDepositController extends Controller
 
         $device = SmsCheckerDevice::create([
             'device_id' => 'DEV-' . strtoupper(bin2hex(random_bytes(6))),
-            'device_name' => $request->input('device_name'),
+            'name' => $request->input('name'),
             'api_key' => SmsCheckerDevice::generateApiKey(),
             'secret_key' => SmsCheckerDevice::generateSecretKey(),
             'status' => 'active',
@@ -107,7 +115,7 @@ class SmsDepositController extends Controller
             'data' => [
                 'id' => $device->id,
                 'device_id' => $device->device_id,
-                'device_name' => $device->device_name,
+                'name' => $device->name,
                 'api_key' => $device->api_key,
                 'secret_key' => $device->secret_key,
                 'qr_config' => $this->generateQrConfig($device),
@@ -123,7 +131,7 @@ class SmsDepositController extends Controller
         $device = SmsCheckerDevice::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'device_name' => 'sometimes|string|max:100',
+            'name' => 'sometimes|string|max:100',
             'status' => 'sometimes|in:active,inactive,blocked',
         ]);
 
@@ -134,7 +142,7 @@ class SmsDepositController extends Controller
             ], 422);
         }
 
-        $device->update($request->only(['device_name', 'status']));
+        $device->update($request->only(['name', 'status']));
 
         return response()->json([
             'success' => true,
@@ -239,7 +247,7 @@ class SmsDepositController extends Controller
         $pending = Deposit::where('method', 'sms_auto')
             ->where('status', 'waiting_transfer')
             ->where('expires_at', '>', now())
-            ->with('user:id,username,name')
+            ->with('user:id,name,phone')
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -300,7 +308,7 @@ class SmsDepositController extends Controller
             'url' => rtrim(config('app.url'), '/'),
             'apiKey' => $device->api_key,
             'secretKey' => $device->secret_key,
-            'deviceName' => $device->device_name,
+            'deviceName' => $device->name,
         ];
     }
 }
