@@ -63,6 +63,12 @@ docker-compose.override.yml
 /public/mix-manifest.json
 
 # ────────────────────────────────────────
+# Database
+# ────────────────────────────────────────
+database/*.sqlite
+database/*.sqlite-journal
+
+# ────────────────────────────────────────
 # Misc
 # ────────────────────────────────────────
 Homestead.json
