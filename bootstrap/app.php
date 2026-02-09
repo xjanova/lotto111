@@ -23,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'phone.verified' => \App\Http\Middleware\EnsurePhoneVerified::class,
             'sms.device' => \App\Http\Middleware\VerifySmsCheckerDevice::class,
         ]);
+
+        $middleware->redirectGuestsTo(fn ($request) => $request->expectsJson() ? null : route('login'));
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
