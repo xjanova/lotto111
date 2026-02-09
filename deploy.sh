@@ -184,7 +184,7 @@ install_dependencies() {
     log_step "Step 5/10 - Installing Dependencies"
 
     log "Installing PHP dependencies..."
-    composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+    composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-scripts
     log "PHP dependencies installed"
 
     if command_exists npm; then
@@ -243,6 +243,9 @@ clear_caches() {
 
 optimize_application() {
     log_step "Step 9/10 - Optimizing Application"
+
+    # Discover packages (skipped during composer install --no-scripts)
+    php artisan package:discover --ansi 2>/dev/null || true
 
     if grep -q "APP_ENV=production" .env 2>/dev/null; then
         php artisan config:cache
@@ -347,7 +350,8 @@ rollback() {
         log ".env restored"
     fi
 
-    composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev 2>/dev/null || true
+    composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-scripts 2>/dev/null || true
+    php artisan package:discover --ansi 2>/dev/null || true
     php artisan migrate --force 2>/dev/null || true
     clear_caches
     optimize_application
