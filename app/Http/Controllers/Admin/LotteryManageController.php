@@ -10,7 +10,9 @@ use App\Models\BetType;
 use App\Models\BetTypeRate;
 use App\Models\LotteryRound;
 use App\Models\LotteryType;
+use App\Models\Ticket;
 use App\Services\LotteryService;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -24,24 +26,51 @@ class LotteryManageController extends Controller
     /**
      * GET /admin/lottery
      */
-    public function index(): JsonResponse
+    public function index(Request $request): View|JsonResponse
     {
         $types = LotteryType::withCount(['rounds' => fn ($q) => $q->whereIn('status', ['upcoming', 'open'])])
             ->orderBy('sort_order')
             ->get();
 
-        $openRounds = LotteryRound::with('lotteryType')
-            ->whereIn('status', ['upcoming', 'open'])
-            ->orderBy('close_at')
+        $openRounds = LotteryRound::with(['lotteryType', 'results'])
+            ->whereIn('status', ['upcoming', 'open', 'closed', 'resulted'])
+            ->orderBy('close_at', 'desc')
+            ->limit(50)
             ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'types' => $types,
-                'open_rounds' => $openRounds,
-            ],
-        ]);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'types' => $types,
+                    'open_rounds' => $openRounds,
+                ],
+            ]);
+        }
+
+        $lotteryTypes = $types->map(fn ($t) => [
+            'id' => $t->id,
+            'name' => $t->name,
+            'category' => $t->category ?? '',
+            'slug' => $t->slug ?? '',
+            'is_active' => (bool) $t->is_active,
+            'open_rounds' => $t->rounds_count,
+            'today_bets' => Ticket::whereHas('round', fn ($q) => $q->where('lottery_type_id', $t->id))
+                ->whereDate('created_at', today())->sum('total_amount'),
+        ])->toArray();
+
+        $rounds = $openRounds->map(fn ($r) => [
+            'id' => $r->id,
+            'type_name' => $r->lotteryType?->name ?? '-',
+            'round_code' => $r->round_code,
+            'status' => $r->status?->value ?? $r->status,
+            'open_at' => $r->open_at?->format('d/m/Y H:i'),
+            'close_at' => $r->close_at?->format('d/m/Y H:i'),
+            'result' => $r->hasResult() ? ($r->getResultValue('three_top') ?? 'ออกแล้ว') : null,
+            'total_bets' => Ticket::where('lottery_round_id', $r->id)->sum('total_amount'),
+        ])->toArray();
+
+        return view('admin.lottery.index', compact('lotteryTypes', 'rounds'));
     }
 
     /**
@@ -103,13 +132,14 @@ class LotteryManageController extends Controller
     /**
      * POST /admin/lottery/rounds
      */
-    public function createRound(Request $request): JsonResponse
+    public function createRound(Request $request): JsonResponse|\Illuminate\Http\RedirectResponse
     {
         $request->validate([
             'lottery_type_id' => 'required|exists:lottery_types,id',
             'open_at' => 'required|date',
             'close_at' => 'required|date|after:open_at',
             'round_number' => 'nullable|integer',
+            'round_code' => 'nullable|string|max:50',
         ]);
 
         $round = $this->lotteryService->createRound(
@@ -121,11 +151,15 @@ class LotteryManageController extends Controller
 
         AdminLog::log($request->user()->id, 'create_round', "สร้างรอบหวย: {$round->round_code}", 'lottery_round', $round->id);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'สร้างรอบสำเร็จ',
-            'data' => $round->load('lotteryType'),
-        ], 201);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'สร้างรอบสำเร็จ',
+                'data' => $round->load('lotteryType'),
+            ], 201);
+        }
+
+        return redirect()->route('admin.lottery.index')->with('success', 'สร้างรอบหวยสำเร็จ');
     }
 
     /**

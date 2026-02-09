@@ -9,6 +9,7 @@ use App\Models\LotteryRound;
 use App\Models\ResultFetchLog;
 use App\Models\ResultSource;
 use App\Services\Scraper\ResultSourceManager;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -35,15 +36,55 @@ class ResultSourceController extends Controller
      * GET /admin/result-sources
      * ดู source ทั้งหมดพร้อมสถานะ
      */
-    public function index(): JsonResponse
+    public function index(Request $request): View|JsonResponse
     {
         $sources = ResultSource::with('lotteryType')
             ->orderBy('lottery_type_id')
             ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $sources,
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => $sources,
+            ]);
+        }
+
+        $totalSources = $sources->count();
+        $autoCount = $sources->where('mode', 'auto')->count();
+        $manualCount = $sources->where('mode', 'manual')->count();
+        $fetchCount24h = ResultFetchLog::where('fetched_at', '>=', now()->subDay())->count();
+
+        $sourcesArray = $sources->map(fn ($s) => [
+            'id' => $s->id,
+            'name' => $s->name,
+            'provider' => $s->provider,
+            'lottery_type_name' => $s->lotteryType?->name ?? '-',
+            'mode' => $s->mode,
+            'source_url' => $s->source_url,
+            'is_active' => (bool) $s->is_active,
+            'last_status' => $s->last_status,
+            'last_fetched_at' => $s->last_fetched_at?->format('d/m/Y H:i') ?? null,
+        ])->toArray();
+
+        $closedRounds = LotteryRound::with('lotteryType')
+            ->where('status', 'closed')
+            ->whereDoesntHave('results')
+            ->orderBy('close_at', 'desc')
+            ->limit(20)
+            ->get()
+            ->map(fn ($r) => [
+                'id' => $r->id,
+                'type_name' => $r->lotteryType?->name ?? '-',
+                'round_code' => $r->round_code,
+            ])->toArray();
+
+        return view('admin.result-sources.index', [
+            'sources' => $sourcesArray,
+            'totalSources' => $totalSources,
+            'autoCount' => $autoCount,
+            'manualCount' => $manualCount,
+            'fetchCount24h' => $fetchCount24h,
+            'closedRounds' => $closedRounds,
         ]);
     }
 

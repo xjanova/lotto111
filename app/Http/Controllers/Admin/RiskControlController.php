@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\RiskAlert;
+use App\Models\Transaction;
 use App\Services\Risk\RiskEngineService;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,14 +37,59 @@ class RiskControlController extends Controller
     /**
      * Risk Management Dashboard
      */
-    public function dashboard(): JsonResponse
+    public function dashboard(Request $request): View|JsonResponse
     {
         $data = $this->riskEngine->getLiveDashboard();
 
-        return response()->json([
-            'success' => true,
-            'data' => $data,
-        ]);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+            ]);
+        }
+
+        $betsToday = abs(Transaction::where('type', 'bet')->whereDate('created_at', today())->sum('amount'));
+        $winsToday = Transaction::where('type', 'win')->whereDate('created_at', today())->sum('amount');
+        $profitToday = $betsToday - $winsToday;
+
+        $activeAlerts = DB::table('risk_alerts')->where('status', 'new')->count();
+
+        $riskStats = [
+            'profit_today' => $profitToday,
+            'total_exposure' => $data['open_exposure'] ?? 0,
+            'player_win_rate' => $betsToday > 0 ? round($winsToday / $betsToday * 100, 1) : 0,
+            'active_alerts' => $activeAlerts,
+        ];
+
+        $topWinners = Transaction::where('type', 'win')
+            ->whereDate('created_at', today())
+            ->selectRaw('user_id, SUM(amount) as total')
+            ->groupBy('user_id')
+            ->orderByDesc('total')
+            ->limit(10)
+            ->get()
+            ->map(fn ($t) => [
+                'name' => User::find($t->user_id)?->name ?? '-',
+                'amount' => (float) $t->total,
+            ])->toArray();
+
+        // Get number exposure from open rounds
+        $openRoundIds = \App\Models\LotteryRound::whereIn('status', ['open', 'closed'])->pluck('id');
+        $numberExposure = [];
+        if ($openRoundIds->isNotEmpty()) {
+            $numberExposure = DB::table('number_exposures')
+                ->whereIn('lottery_round_id', $openRoundIds)
+                ->orderByDesc('potential_payout')
+                ->limit(10)
+                ->get()
+                ->map(fn ($n) => [
+                    'number' => $n->number ?? '-',
+                    'bet_type' => $n->bet_type ?? '',
+                    'total_amount' => (float) ($n->total_bet_amount ?? $n->potential_payout ?? 0),
+                ])->toArray();
+        }
+
+        return view('admin.risk.dashboard', compact('riskStats', 'topWinners', 'numberExposure'));
     }
 
     /**

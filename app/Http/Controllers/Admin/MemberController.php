@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AdminLog;
 use App\Models\User;
 use App\Services\BalanceService;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,43 +17,40 @@ class MemberController extends Controller
         private BalanceService $balanceService,
     ) {}
 
-    /**
-     * GET /admin/members
-     */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): View|JsonResponse
     {
-        $query = User::where('role', 'member')
-            ->with('riskProfile');
+        $query = User::where('role', 'member')->with('riskProfile');
 
         if ($search = $request->string('search')->value()) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('referral_code', $search);
-            });
+            $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('phone', 'like', "%{$search}%")->orWhere('referral_code', $search));
         }
-
         if ($status = $request->string('status')->value()) {
             $query->where('status', $status);
         }
 
-        $sortBy = $request->string('sort', 'created_at')->value();
-        $sortDir = $request->string('dir', 'desc')->value();
-        $query->orderBy($sortBy, $sortDir);
+        $paginated = $query->orderBy($request->string('sort', 'created_at')->value(), $request->string('dir', 'desc')->value())
+            ->paginate($request->integer('per_page', 20));
 
-        return response()->json([
-            'success' => true,
-            'data' => $query->paginate($request->integer('per_page', 20)),
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'data' => $paginated]);
+        }
+
+        $members = collect($paginated->items())->map(fn ($u) => [
+            'id' => $u->id, 'name' => $u->name, 'phone' => $u->phone,
+            'balance' => (float) $u->balance, 'vip_level' => $u->vip_level ?? 0,
+            'status' => $u->status?->value ?? $u->status ?? 'active',
+            'created_at' => $u->created_at?->format('d/m/Y H:i'),
+        ])->toArray();
+
+        return view('admin.members.index', [
+            'members' => $members, 'total' => $paginated->total(),
+            'page' => $paginated->currentPage(), 'lastPage' => $paginated->lastPage(),
         ]);
     }
 
-    /**
-     * GET /admin/members/{user}
-     */
-    public function show(User $user): JsonResponse
+    public function show(User $user): View|JsonResponse
     {
         $user->load(['riskProfile', 'primaryBankAccount', 'bankAccounts']);
-
         $stats = [
             'total_deposits' => $user->deposits()->where('status', 'credited')->sum('amount'),
             'total_withdrawals' => $user->withdrawals()->whereIn('status', ['approved', 'completed'])->sum('amount'),
@@ -62,82 +60,32 @@ class MemberController extends Controller
             'referrals_count' => User::where('referred_by', $user->id)->count(),
         ];
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'user' => $user,
-                'stats' => $stats,
-            ],
-        ]);
-    }
-
-    /**
-     * PUT /admin/members/{user}/status
-     */
-    public function updateStatus(Request $request, User $user): JsonResponse
-    {
-        $request->validate([
-            'status' => 'required|string|in:active,suspended,banned',
-            'reason' => 'nullable|string|max:500',
-        ]);
-
-        $oldStatus = $user->status?->value;
-        $user->update(['status' => $request->status]);
-
-        AdminLog::log(
-            $request->user()->id,
-            'update_member_status',
-            "เปลี่ยนสถานะ {$user->name} จาก {$oldStatus} เป็น {$request->status}" . ($request->reason ? ": {$request->reason}" : ''),
-            'user',
-            $user->id,
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => 'อัปเดตสถานะสำเร็จ',
-        ]);
-    }
-
-    /**
-     * POST /admin/members/{user}/credit
-     */
-    public function adjustCredit(Request $request, User $user): JsonResponse
-    {
-        $request->validate([
-            'amount' => 'required|numeric|not_in:0',
-            'reason' => 'required|string|max:500',
-        ]);
-
-        $amount = (float) $request->amount;
-
-        if ($amount > 0) {
-            $this->balanceService->credit(
-                $user,
-                $amount,
-                "Admin เติมเครดิต: {$request->reason}",
-                TransactionType::Adjustment,
-            );
-        } else {
-            $this->balanceService->debit(
-                $user,
-                abs($amount),
-                "Admin หักเครดิต: {$request->reason}",
-                TransactionType::Adjustment,
-            );
+        if (request()->wantsJson()) {
+            return response()->json(['success' => true, 'data' => ['user' => $user, 'stats' => $stats]]);
         }
 
-        AdminLog::log(
-            $request->user()->id,
-            'adjust_credit',
-            "ปรับเครดิต {$user->name}: {$amount} บาท - {$request->reason}",
-            'user',
-            $user->id,
-        );
+        return view('admin.members.index', ['members' => [], 'total' => 0, 'page' => 1, 'lastPage' => 1]);
+    }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'ปรับเครดิตสำเร็จ',
-            'new_balance' => (float) $user->fresh()->balance,
-        ]);
+    public function updateStatus(Request $request, User $user): JsonResponse
+    {
+        $request->validate(['status' => 'required|string|in:active,suspended,banned', 'reason' => 'nullable|string|max:500']);
+        $oldStatus = $user->status?->value ?? $user->status ?? 'unknown';
+        $user->update(['status' => $request->status]);
+        AdminLog::log($request->user()->id, 'update_member_status', "เปลี่ยนสถานะ {$user->name} จาก {$oldStatus} เป็น {$request->status}" . ($request->reason ? ": {$request->reason}" : ''), 'user', $user->id);
+        return response()->json(['success' => true, 'message' => 'อัปเดตสถานะสำเร็จ']);
+    }
+
+    public function adjustCredit(Request $request, User $user): JsonResponse
+    {
+        $request->validate(['amount' => 'required|numeric|not_in:0', 'reason' => 'required|string|max:500']);
+        $amount = (float) $request->amount;
+        if ($amount > 0) {
+            $this->balanceService->credit($user, $amount, "Admin เติมเครดิต: {$request->reason}", TransactionType::Adjustment);
+        } else {
+            $this->balanceService->debit($user, abs($amount), "Admin หักเครดิต: {$request->reason}", TransactionType::Adjustment);
+        }
+        AdminLog::log($request->user()->id, 'adjust_credit', "ปรับเครดิต {$user->name}: {$amount} บาท - {$request->reason}", 'user', $user->id);
+        return response()->json(['success' => true, 'message' => 'ปรับเครดิตสำเร็จ', 'new_balance' => (float) $user->fresh()->balance]);
     }
 }
