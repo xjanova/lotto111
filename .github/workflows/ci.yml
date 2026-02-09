@@ -39,6 +39,9 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
+      - name: Configure Composer GitHub auth
+        run: composer config --global github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress --no-scripts
 
@@ -84,6 +87,9 @@ jobs:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-php${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-php${{ matrix.php }}-composer-
+
+      - name: Configure Composer GitHub auth
+        run: composer config --global github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress --no-scripts
@@ -139,6 +145,9 @@ jobs:
         with:
           php-version: '8.3'
           tools: composer:v2
+
+      - name: Configure Composer GitHub auth
+        run: composer config --global github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress --no-scripts
