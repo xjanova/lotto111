@@ -4,7 +4,7 @@
 @section('breadcrumb') <span class="text-gray-700">จัดการสมาชิก</span> @endsection
 
 @section('content')
-<div x-data="membersPage()" x-init="load()" class="space-y-6">
+<div x-data="membersPage()" class="space-y-6">
 
     {{-- Page Hero --}}
     <div class="relative overflow-hidden rounded-2xl p-5 md:p-6" style="background: linear-gradient(135deg, #4f46e5, #7c3aed, #a855f7);">
