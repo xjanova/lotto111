@@ -1,0 +1,139 @@
+name: Auto Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - '.github/ISSUE_TEMPLATE/**'
+
+permissions:
+  contents: write
+
+jobs:
+  auto-release:
+    name: Create Release Tag
+    runs-on: ubuntu-latest
+
+    # Skip if commit message contains [skip release] or is a release commit
+    if: |
+      !contains(github.event.head_commit.message, '[skip release]') &&
+      !contains(github.event.head_commit.message, 'chore(release)')
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest tag
+        id: latest_tag
+        run: |
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $TAG"
+
+      - name: Determine version bump
+        id: bump
+        run: |
+          LATEST_TAG="${{ steps.latest_tag.outputs.tag }}"
+
+          # Get commits since last tag
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            COMMITS=$(git log --pretty=format:"%s" --no-merges)
+          else
+            COMMITS=$(git log ${LATEST_TAG}..HEAD --pretty=format:"%s" --no-merges)
+          fi
+
+          echo "Commits since $LATEST_TAG:"
+          echo "$COMMITS"
+
+          # Determine bump type from conventional commits
+          BUMP="patch"
+
+          if echo "$COMMITS" | grep -qiE "^feat(\(.*\))?!:|BREAKING CHANGE"; then
+            BUMP="major"
+          elif echo "$COMMITS" | grep -qiE "^feat(\(.*\))?:"; then
+            BUMP="minor"
+          fi
+
+          echo "bump=$BUMP" >> $GITHUB_OUTPUT
+          echo "Bump type: $BUMP"
+
+      - name: Calculate new version
+        id: new_version
+        run: |
+          CURRENT="${{ steps.latest_tag.outputs.tag }}"
+          BUMP="${{ steps.bump.outputs.bump }}"
+
+          # Strip 'v' prefix
+          VERSION="${CURRENT#v}"
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+          case "$BUMP" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_TAG"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          LATEST_TAG="${{ steps.latest_tag.outputs.tag }}"
+
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            CHANGES=$(git log --pretty=format:"- %s (%h)" --no-merges -20)
+          else
+            CHANGES=$(git log ${LATEST_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          fi
+
+          # Categorize changes
+          FEATURES=$(echo "$CHANGES" | grep -iE "^- feat" || true)
+          FIXES=$(echo "$CHANGES" | grep -iE "^- fix" || true)
+          OTHER=$(echo "$CHANGES" | grep -viE "^- (feat|fix)" || true)
+
+          {
+            echo "body<<EOF"
+
+            if [ -n "$FEATURES" ]; then
+              echo "### Features"
+              echo "$FEATURES"
+              echo ""
+            fi
+
+            if [ -n "$FIXES" ]; then
+              echo "### Bug Fixes"
+              echo "$FIXES"
+              echo ""
+            fi
+
+            if [ -n "$OTHER" ]; then
+              echo "### Other Changes"
+              echo "$OTHER"
+              echo ""
+            fi
+
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        run: |
+          NEW_TAG="${{ steps.new_version.outputs.new_tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
+          git push origin "$NEW_TAG"
+          echo "Pushed tag: $NEW_TAG"
