@@ -13,7 +13,26 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    $lotteryTypes = \App\Models\LotteryType::where('is_active', true)
+        ->orderBy('sort_order')
+        ->get();
+
+    $openRounds = \App\Models\LotteryRound::with('lotteryType')
+        ->where('status', 'open')
+        ->orderBy('close_at')
+        ->limit(6)
+        ->get();
+
+    $latestResults = \App\Models\LotteryRound::with('lotteryType')
+        ->where('status', 'resulted')
+        ->orderByDesc('result_at')
+        ->limit(6)
+        ->get();
+
+    $siteName = \App\Models\Setting::getValue('site_name', 'Lotto111');
+    $marquee = \App\Models\Setting::getValue('marquee_text', '');
+
+    return view('welcome', compact('lotteryTypes', 'openRounds', 'latestResults', 'siteName', 'marquee'));
 });
 
 /*
