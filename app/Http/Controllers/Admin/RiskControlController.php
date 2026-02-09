@@ -117,7 +117,7 @@ class RiskControlController extends Controller
         $data = $this->riskEngine->getUserProfitabilityRanking(
             sortBy: $request->input('sort', 'net_profit_for_system'),
             direction: $request->input('dir', 'desc'),
-            perPage: (int) $request->input('per_page', 30),
+            limit: (int) $request->input('per_page', 30),
         );
 
         return response()->json([
@@ -192,7 +192,7 @@ class RiskControlController extends Controller
 
         $this->riskEngine->setUserRateAdjustment(
             user: $user,
-            adjustmentPercent: $request->input('adjustment_percent'),
+            percent: (float) $request->input('adjustment_percent'),
             adminId: $request->user()->id,
             reason: $request->input('reason'),
         );
@@ -476,7 +476,7 @@ class RiskControlController extends Controller
      */
     public function adjustmentLogs(Request $request): JsonResponse
     {
-        $query = DB::table('rate_adjustments_log')
+        $query = DB::table('rate_adjustment_logs')
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('target_type')) {

@@ -302,7 +302,7 @@ function dashboardPage() {
         initRevenueChart() {
             const ctx = document.getElementById('revenueChart');
             if (!ctx) return;
-            const data = @json($chartData['revenue'] ?? ['labels'=>[],'deposits'=>[],'withdrawals'=>[],'profit'=>[]]);
+            const data = @json($chartData['revenue'] ?? []);
             this.revenueChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -320,7 +320,7 @@ function dashboardPage() {
         initMemberChart() {
             const ctx = document.getElementById('memberChart');
             if (!ctx) return;
-            const data = @json($chartData['members'] ?? ['labels'=>[],'data'=>[]]);
+            const data = @json($chartData['members'] ?? []);
             new Chart(ctx, {
                 type: 'bar',
                 data: { labels: data.labels, datasets: [{ label: 'สมาชิกใหม่', data: data.data, backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 4, barThickness: 12 }] },
@@ -331,7 +331,7 @@ function dashboardPage() {
         initDepositWithdrawChart() {
             const ctx = document.getElementById('depositWithdrawChart');
             if (!ctx) return;
-            const data = @json($chartData['deposit_withdraw'] ?? ['labels'=>[],'deposits'=>[],'withdrawals'=>[]]);
+            const data = @json($chartData['deposit_withdraw'] ?? []);
             new Chart(ctx, {
                 type: 'bar',
                 data: { labels: data.labels, datasets: [
@@ -345,7 +345,7 @@ function dashboardPage() {
         initLotteryPieChart() {
             const ctx = document.getElementById('lotteryPieChart');
             if (!ctx) return;
-            const data = @json($chartData['lottery_types'] ?? ['labels'=>[],'data'=>[],'colors'=>[]]);
+            const data = @json($chartData['lottery_types'] ?? []);
             new Chart(ctx, {
                 type: 'doughnut',
                 data: { labels: data.labels, datasets: [{ data: data.data, backgroundColor: data.colors.length ? data.colors : ['#3b82f6','#22c55e','#f97316','#8b5cf6','#ec4899','#14b8a6','#f59e0b','#ef4444'] }] },

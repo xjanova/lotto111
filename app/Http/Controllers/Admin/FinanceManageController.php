@@ -183,8 +183,8 @@ class FinanceManageController extends Controller
      */
     public function report(Request $request): View|JsonResponse
     {
-        $from = $request->date('from', now()->startOfMonth());
-        $to = $request->date('to', now());
+        $from = $request->date('from') ?? now()->startOfMonth();
+        $to = $request->date('to') ?? now();
 
         $deposits = Transaction::where('type', 'deposit')
             ->whereBetween('created_at', [$from, $to->copy()->endOfDay()])
