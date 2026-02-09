@@ -74,6 +74,10 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckUserStatus::class])
         Route::get('/rounds/{id}', [LotteryController::class, 'roundDetail']);
         Route::get('/rates/{roundId}', [LotteryController::class, 'rates']);
         Route::post('/bet', [LotteryController::class, 'placeBet']);
+
+        // Yeekee - ยิงเลข
+        Route::post('/yeekee/submit', [LotteryController::class, 'yeekeeSubmit']);
+        Route::get('/yeekee/submissions/{roundId}', [LotteryController::class, 'yeekeeSubmissions']);
     });
 
     // Tickets

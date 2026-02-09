@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             BetTypeSeeder::class,
             BetTypeRateSeeder::class,
             SettingsSeeder::class,
+            ResultSourceSeeder::class,
         ]);
     }
 }

@@ -64,11 +64,50 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Auto Result Fetch
+    | Auto Result Fetch & Scraping
     |--------------------------------------------------------------------------
     */
-    'auto_fetch_results' => env('LOTTERY_AUTO_FETCH', false),
+    'auto_fetch_results' => env('LOTTERY_AUTO_FETCH', true),
+    'auto_submit_scraped_results' => env('LOTTERY_AUTO_SUBMIT', true),
     'result_api_url' => env('LOTTERY_RESULT_API_URL', ''),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Scraper Settings
+    |--------------------------------------------------------------------------
+    */
+    'scraper' => [
+        'default_timeout' => env('SCRAPER_TIMEOUT', 30),
+        'default_retries' => env('SCRAPER_RETRIES', 3),
+        'default_retry_delay' => env('SCRAPER_RETRY_DELAY', 30),
+        'log_retention_days' => env('SCRAPER_LOG_RETENTION', 30),
+        'user_agent_rotation' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Result Sources - Default URLs
+    |--------------------------------------------------------------------------
+    */
+    'sources' => [
+        'thai_government' => [
+            'primary' => env('LOTTERY_THAI_GOV_URL', 'https://www.glo.or.th/api/lottery/getLatestLottery'),
+            'fallback' => env('LOTTERY_THAI_GOV_FALLBACK', 'https://lotto.api.rayriffy.com/latest'),
+        ],
+        'lao_lottery' => [
+            'primary' => env('LOTTERY_LAO_URL', 'https://lotto.mthai.com/lottery/lao'),
+        ],
+        'hanoi_lottery' => [
+            'primary' => env('LOTTERY_HANOI_URL', 'https://lotto.mthai.com/lottery/hanoi'),
+        ],
+        'malaysia_lottery' => [
+            'primary' => env('LOTTERY_MALAYSIA_URL', 'https://4dno.org/en/'),
+            'fallback' => env('LOTTERY_MALAYSIA_FALLBACK', 'https://www.check4d.org/'),
+        ],
+        'stock_lottery' => [
+            'primary' => env('LOTTERY_STOCK_URL', 'https://www.lottosociety.com/'),
+        ],
+    ],
 
     /*
     |--------------------------------------------------------------------------

@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\FinanceManageController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SmsDepositController;
 use App\Http\Controllers\Admin\RiskControlController;
+use App\Http\Controllers\Admin\ResultSourceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -72,6 +73,32 @@ Route::middleware(['auth', 'admin.only'])->prefix('admin')->name('admin.')->grou
         Route::get('/notifications', [SmsDepositController::class, 'notifications'])->name('notifications');
         Route::get('/pending', [SmsDepositController::class, 'pendingDeposits'])->name('pending');
         Route::post('/manual-match', [SmsDepositController::class, 'manualMatch'])->name('manual-match');
+    });
+
+    // Result Source Management (ระบบดึงผลหวยอัตโนมัติ)
+    Route::prefix('result-sources')->name('result-sources.')->group(function () {
+        Route::get('/', [ResultSourceController::class, 'index'])->name('index');
+        Route::get('/status', [ResultSourceController::class, 'systemStatus'])->name('status');
+        Route::get('/health', [ResultSourceController::class, 'healthCheck'])->name('health');
+        Route::get('/providers', [ResultSourceController::class, 'providers'])->name('providers');
+        Route::post('/fetch-all', [ResultSourceController::class, 'fetchAll'])->name('fetch-all');
+        Route::post('/manual-submit', [ResultSourceController::class, 'manualSubmit'])->name('manual-submit');
+
+        // CRUD
+        Route::post('/', [ResultSourceController::class, 'store'])->name('store');
+        Route::get('/{id}', [ResultSourceController::class, 'show'])->name('show');
+        Route::put('/{id}', [ResultSourceController::class, 'update'])->name('update');
+        Route::delete('/{id}', [ResultSourceController::class, 'destroy'])->name('destroy');
+
+        // Actions
+        Route::put('/{id}/mode', [ResultSourceController::class, 'switchMode'])->name('switch-mode');
+        Route::post('/{id}/fetch', [ResultSourceController::class, 'fetchNow'])->name('fetch');
+        Route::post('/{id}/test', [ResultSourceController::class, 'testScrape'])->name('test');
+        Route::get('/{id}/logs', [ResultSourceController::class, 'logs'])->name('logs');
+
+        // Yeekee
+        Route::post('/yeekee/calculate', [ResultSourceController::class, 'calculateYeekee'])->name('yeekee.calculate');
+        Route::get('/yeekee/submissions/{roundId}', [ResultSourceController::class, 'yeekeeSubmissions'])->name('yeekee.submissions');
     });
 
     // Risk Management & Profit Control

@@ -25,10 +25,23 @@ Schedule::call(function () {
     app(\App\Services\Risk\RiskEngineService::class)->runAutoBalance();
 })->everyFiveMinutes();
 
+// Auto-fetch lottery results every minute (checks schedule internally)
+Schedule::command('lottery:fetch-results')->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();
+
+// Process Yeekee results for closed rounds every minute
+Schedule::command('lottery:process-yeekee')->everyMinute()
+    ->withoutOverlapping()
+    ->runInBackground();
+
 // Generate Yeekee rounds daily at 23:50
 Schedule::call(function () {
     app(\App\Services\LotteryService::class)->generateYeekeeRounds();
 })->dailyAt('23:50');
+
+// Clean old scraper logs monthly
+Schedule::command('lottery:sources cleanup --days=30')->monthly();
 
 // Daily stats reset at midnight
 Schedule::call(function () {

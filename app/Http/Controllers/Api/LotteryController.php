@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Lottery\PlaceBetRequest;
+use App\Models\LotteryRound;
+use App\Models\YeekeeSubmission;
 use App\Services\BettingService;
 use App\Services\LotteryService;
+use App\Services\Scraper\ResultSourceManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -97,5 +100,82 @@ class LotteryController extends Controller
         );
 
         return response()->json($result, $result['success'] ? 201 : 422);
+    }
+
+    /**
+     * POST /api/lottery/yeekee/submit
+     * ยิงเลข Yeekee
+     */
+    public function yeekeeSubmit(Request $request): JsonResponse
+    {
+        $request->validate([
+            'round_id' => 'required|exists:lottery_rounds,id',
+            'number' => 'required|string|regex:/^\d{5}$/',
+        ]);
+
+        $round = LotteryRound::with('lotteryType')->findOrFail($request->round_id);
+
+        // ตรวจสอบว่าเป็นรอบ Yeekee
+        if ($round->lotteryType?->slug !== 'yeekee') {
+            return response()->json([
+                'success' => false,
+                'message' => 'รอบนี้ไม่ใช่ Yeekee',
+            ], 422);
+        }
+
+        // ตรวจสอบว่ารอบเปิดอยู่
+        if (! $round->isOpen()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'รอบนี้ปิดรับแล้ว',
+            ], 422);
+        }
+
+        $manager = app(ResultSourceManager::class);
+        $submission = $manager->getYeekeeEngine()->submitNumber(
+            $round,
+            $request->user()->id,
+            $request->number,
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ส่งเลขสำเร็จ',
+            'data' => [
+                'submission_id' => $submission->id,
+                'number' => $submission->number,
+                'sequence' => $submission->sequence,
+                'round_code' => $round->round_code,
+            ],
+        ], 201);
+    }
+
+    /**
+     * GET /api/lottery/yeekee/submissions/{roundId}
+     * ดูเลขที่ส่งมาแล้วในรอบ Yeekee
+     */
+    public function yeekeeSubmissions(int $roundId): JsonResponse
+    {
+        $round = LotteryRound::findOrFail($roundId);
+
+        $submissions = YeekeeSubmission::where('lottery_round_id', $roundId)
+            ->with('user:id,name')
+            ->orderBy('sequence')
+            ->get()
+            ->map(fn ($s) => [
+                'sequence' => $s->sequence,
+                'number' => $s->number,
+                'user' => $s->user?->name ?? 'Anonymous',
+                'time' => $s->created_at?->format('H:i:s'),
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'round_code' => $round->round_code,
+                'total' => $submissions->count(),
+                'submissions' => $submissions,
+            ],
+        ]);
     }
 }
