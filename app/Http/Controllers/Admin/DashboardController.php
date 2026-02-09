@@ -104,41 +104,75 @@ class DashboardController extends Controller
 
     private function buildChartData(): array
     {
+        $sevenDaysAgo = now()->subDays(6)->startOfDay();
+        $thirtyDaysAgo = now()->subDays(29)->startOfDay();
+
+        // Batch query: 7-day deposits grouped by date
+        $depositsByDay = Deposit::where('status', 'credited')
+            ->where('created_at', '>=', $sevenDaysAgo)
+            ->selectRaw("DATE(created_at) as date, SUM(amount) as total")
+            ->groupBy('date')->pluck('total', 'date');
+
+        $withdrawalsByDay = Withdrawal::whereIn('status', ['approved', 'completed'])
+            ->where('created_at', '>=', $sevenDaysAgo)
+            ->selectRaw("DATE(created_at) as date, SUM(amount) as total")
+            ->groupBy('date')->pluck('total', 'date');
+
+        $betsByDay = Transaction::where('type', 'bet')
+            ->where('created_at', '>=', $sevenDaysAgo)
+            ->selectRaw("DATE(created_at) as date, SUM(ABS(amount)) as total")
+            ->groupBy('date')->pluck('total', 'date');
+
+        $winsByDay = Transaction::where('type', 'win')
+            ->where('created_at', '>=', $sevenDaysAgo)
+            ->selectRaw("DATE(created_at) as date, SUM(amount) as total")
+            ->groupBy('date')->pluck('total', 'date');
+
         $labels = [];
         $deposits = [];
         $withdrawals = [];
         $profit = [];
-        $memberLabels = [];
-        $memberData = [];
 
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i);
+            $dateKey = $date->format('Y-m-d');
             $labels[] = $date->format('d/m');
-
-            $dayDeposits = Deposit::whereDate('created_at', $date)->where('status', 'credited')->sum('amount');
-            $dayWithdrawals = Withdrawal::whereDate('created_at', $date)->whereIn('status', ['approved', 'completed'])->sum('amount');
-            $dayBets = abs(Transaction::where('type', 'bet')->whereDate('created_at', $date)->sum('amount'));
-            $dayWins = Transaction::where('type', 'win')->whereDate('created_at', $date)->sum('amount');
-
-            $deposits[] = (float) $dayDeposits;
-            $withdrawals[] = (float) $dayWithdrawals;
-            $profit[] = $dayBets - $dayWins;
+            $deposits[] = (float) ($depositsByDay[$dateKey] ?? 0);
+            $withdrawals[] = (float) ($withdrawalsByDay[$dateKey] ?? 0);
+            $profit[] = (float) ($betsByDay[$dateKey] ?? 0) - (float) ($winsByDay[$dateKey] ?? 0);
         }
 
+        // Batch query: 30-day member growth
+        $membersByDay = User::where('role', 'member')
+            ->where('created_at', '>=', $thirtyDaysAgo)
+            ->selectRaw("DATE(created_at) as date, COUNT(*) as total")
+            ->groupBy('date')->pluck('total', 'date');
+
+        $memberLabels = [];
+        $memberData = [];
         for ($i = 29; $i >= 0; $i--) {
             $date = now()->subDays($i);
+            $dateKey = $date->format('Y-m-d');
             $memberLabels[] = $date->format('d/m');
-            $memberData[] = User::where('role', 'member')->whereDate('created_at', $date)->count();
+            $memberData[] = (int) ($membersByDay[$dateKey] ?? 0);
         }
 
-        // Lottery type breakdown (real data)
+        // Lottery type breakdown - batch query with join
         $activeLotteryTypes = LotteryType::where('is_active', true)->get();
+        $lotteryTypeIds = $activeLotteryTypes->pluck('id')->toArray();
         $lotteryTypes = $activeLotteryTypes->pluck('name')->toArray();
-        $lotteryAmounts = $activeLotteryTypes->map(fn ($lt) =>
-            (float) Ticket::whereHas('round', fn ($q) => $q->where('lottery_type_id', $lt->id))
-                ->whereDate('created_at', '>=', now()->subDays(30))
-                ->sum('total_amount')
-        )->toArray();
+
+        $lotteryAmountsMap = collect();
+        if (!empty($lotteryTypeIds)) {
+            $lotteryAmountsMap = Ticket::join('lottery_rounds', 'tickets.lottery_round_id', '=', 'lottery_rounds.id')
+                ->whereIn('lottery_rounds.lottery_type_id', $lotteryTypeIds)
+                ->where('tickets.created_at', '>=', now()->subDays(30))
+                ->selectRaw('lottery_rounds.lottery_type_id, SUM(tickets.total_amount) as total')
+                ->groupBy('lottery_rounds.lottery_type_id')
+                ->pluck('total', 'lottery_type_id');
+        }
+
+        $lotteryAmounts = $activeLotteryTypes->map(fn ($lt) => (float) ($lotteryAmountsMap[$lt->id] ?? 0))->toArray();
         $colors = ['#3b82f6', '#22c55e', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#ef4444', '#6366f1', '#84cc16'];
 
         return [
