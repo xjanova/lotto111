@@ -145,16 +145,13 @@ class MalaysiaLotteryScraper extends AbstractScraper
             }
         }
 
-        // Last resort: find sequences of 4-digit numbers (prize table pattern)
+        // Last resort: find 3 consecutive 4-digit numbers in a table row pattern (prize table)
         if (! $firstPrize) {
-            if (preg_match_all('/\b(\d{4})\b/', $html, $allNumbers)) {
-                $numbers = $allNumbers[1];
-                // ใช้ 3 เลขแรกที่พบ (มักเป็น 1st, 2nd, 3rd prize)
-                if (count($numbers) >= 3) {
-                    $firstPrize = $numbers[0];
-                    $secondPrize = $numbers[1];
-                    $thirdPrize = $numbers[2];
-                }
+            // Only match 3 consecutive 4-digit numbers separated by whitespace/tags (likely a prize table row)
+            if (preg_match('/(\d{4})\s*(?:<[^>]*>\s*)*(\d{4})\s*(?:<[^>]*>\s*)*(\d{4})/', $html, $m)) {
+                $firstPrize = $m[1];
+                $secondPrize = $m[2];
+                $thirdPrize = $m[3];
             }
         }
 

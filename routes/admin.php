@@ -84,6 +84,10 @@ Route::middleware(['auth', 'admin.only'])->prefix('admin')->name('admin.')->grou
         Route::post('/fetch-all', [ResultSourceController::class, 'fetchAll'])->name('fetch-all');
         Route::post('/manual-submit', [ResultSourceController::class, 'manualSubmit'])->name('manual-submit');
 
+        // Yeekee (must be before /{id} wildcard routes)
+        Route::post('/yeekee/calculate', [ResultSourceController::class, 'calculateYeekee'])->name('yeekee.calculate');
+        Route::get('/yeekee/submissions/{roundId}', [ResultSourceController::class, 'yeekeeSubmissions'])->name('yeekee.submissions');
+
         // CRUD
         Route::post('/', [ResultSourceController::class, 'store'])->name('store');
         Route::get('/{id}', [ResultSourceController::class, 'show'])->name('show');
@@ -95,10 +99,6 @@ Route::middleware(['auth', 'admin.only'])->prefix('admin')->name('admin.')->grou
         Route::post('/{id}/fetch', [ResultSourceController::class, 'fetchNow'])->name('fetch');
         Route::post('/{id}/test', [ResultSourceController::class, 'testScrape'])->name('test');
         Route::get('/{id}/logs', [ResultSourceController::class, 'logs'])->name('logs');
-
-        // Yeekee
-        Route::post('/yeekee/calculate', [ResultSourceController::class, 'calculateYeekee'])->name('yeekee.calculate');
-        Route::get('/yeekee/submissions/{roundId}', [ResultSourceController::class, 'yeekeeSubmissions'])->name('yeekee.submissions');
     });
 
     // Risk Management & Profit Control

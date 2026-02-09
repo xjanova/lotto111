@@ -224,9 +224,9 @@ class BettingService
                 'number' => $bet['number'],
             ],
             [
-                'total_bet_amount' => DB::raw("total_bet_amount + {$bet['amount']}"),
+                'total_bet_amount' => DB::raw('total_bet_amount + ' . (float) $bet['amount']),
                 'bet_count' => DB::raw('bet_count + 1'),
-                'potential_payout' => DB::raw("potential_payout + " . ($bet['amount'] * $bet['rate'])),
+                'potential_payout' => DB::raw('potential_payout + ' . ((float) $bet['amount'] * (float) $bet['rate'])),
                 'effective_rate' => $bet['rate'],
             ]
         );

@@ -178,7 +178,7 @@ class ResultService
         return match ($betTypeSlug) {
             'three_top' => ($results['three_top'] ?? '') === $number,
             'three_tod' => $this->checkTod($number, $results['three_top'] ?? ''),
-            'three_bottom' => ($results['two_bottom'] ?? null) !== null && str_ends_with($results['two_bottom'], '') && ($results['three_bottom'] ?? '') === $number,
+            'three_bottom' => ($results['three_bottom'] ?? '') === $number,
             'two_top' => ($results['three_top'] ?? '') !== '' && substr($results['three_top'], -2) === $number,
             'two_bottom' => ($results['two_bottom'] ?? '') === $number,
             'two_tod' => $this->checkTod($number, substr($results['three_top'] ?? '', -2)),
