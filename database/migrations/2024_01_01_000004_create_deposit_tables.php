@@ -74,7 +74,7 @@ return new class extends Migration
                 $table->unsignedBigInteger('transaction_id');
                 $table->string('transaction_type', 30);
                 $table->string('status', 20)->default('reserved');
-                $table->timestamp('expires_at');
+                $table->timestamp('expires_at')->useCurrent();
                 $table->timestamp('matched_at')->nullable();
                 $table->timestamps();
             });
@@ -85,7 +85,7 @@ return new class extends Migration
                 $table->id();
                 $table->string('nonce')->unique();
                 $table->string('device_id');
-                $table->timestamp('used_at');
+                $table->timestamp('used_at')->useCurrent();
                 $table->timestamps();
             });
         }

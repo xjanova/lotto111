@@ -16,7 +16,7 @@ return new class extends Migration
                 $table->string('purpose', 30); // register, login, reset_password, verify
                 $table->boolean('is_used')->default(false);
                 $table->tinyInteger('attempts')->unsigned()->default(0);
-                $table->timestamp('expires_at');
+                $table->timestamp('expires_at')->useCurrent();
                 $table->timestamp('created_at')->useCurrent();
 
                 $table->index(['phone', 'purpose']);
@@ -65,8 +65,8 @@ return new class extends Migration
                 $table->string('round_code', 50)->unique();
                 $table->integer('round_number')->nullable();
                 $table->string('status', 20)->default('upcoming'); // upcoming, open, closed, resulted, cancelled
-                $table->timestamp('open_at');
-                $table->timestamp('close_at');
+                $table->timestamp('open_at')->useCurrent();
+                $table->timestamp('close_at')->useCurrent();
                 $table->timestamp('result_at')->nullable();
                 $table->timestamps();
 
