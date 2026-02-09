@@ -83,14 +83,20 @@ class LaoLotteryScraper extends AbstractScraper
             $nodes = $this->xpath($dom, $selector);
             if ($nodes->length > 0) {
                 $text = $this->cleanNumber($nodes->item(0)->textContent);
-                if (strlen($text) === 6) {
+                if (strlen($text) === 6 && ctype_digit($text)) {
                     $fullNumber = $text;
                     break;
                 }
-                if (strlen($text) >= 3) {
-                    // Might be individual digits combined
-                    $fullNumber = $text;
-                    break;
+                // Try combining digits from multiple nodes (some layouts split digits)
+                if ($nodes->length >= 6) {
+                    $combined = '';
+                    for ($i = 0; $i < min($nodes->length, 6); $i++) {
+                        $combined .= $this->cleanNumber($nodes->item($i)->textContent);
+                    }
+                    if (strlen($combined) === 6 && ctype_digit($combined)) {
+                        $fullNumber = $combined;
+                        break;
+                    }
                 }
             }
         }

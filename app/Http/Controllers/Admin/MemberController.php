@@ -64,7 +64,7 @@ class MemberController extends Controller
             return response()->json(['success' => true, 'data' => ['user' => $user, 'stats' => $stats]]);
         }
 
-        return view('admin.members.index', ['members' => [], 'total' => 0, 'page' => 1, 'lastPage' => 1]);
+        return view('admin.members.show', ['user' => $user, 'stats' => $stats]);
     }
 
     public function updateStatus(Request $request, User $user): JsonResponse

@@ -153,7 +153,7 @@ class YeekeeEngine extends AbstractScraper
     public function submitNumber(LotteryRound $round, int $userId, string $number): YeekeeSubmission
     {
         // หา sequence ถัดไป
-        $nextSequence = YeekeeSubmission::where('lottery_round_id', $round->id)->max('sequence') + 1;
+        $nextSequence = (YeekeeSubmission::where('lottery_round_id', $round->id)->max('sequence') ?? 0) + 1;
 
         return YeekeeSubmission::create([
             'lottery_round_id' => $round->id,
