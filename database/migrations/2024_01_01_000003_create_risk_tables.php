@@ -47,8 +47,10 @@ return new class extends Migration
             $table->id();
             $table->string('key')->unique();
             $table->text('value');
+            $table->string('data_type', 30)->default('string');
             $table->text('description')->nullable();
             $table->string('group', 50)->nullable();
+            $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamps();
         });
 
@@ -64,6 +66,9 @@ return new class extends Migration
             $table->string('status', 20)->default('new');
             $table->foreignId('acknowledged_by')->nullable();
             $table->timestamp('acknowledged_at')->nullable();
+            $table->foreignId('resolved_by')->nullable();
+            $table->timestamp('resolved_at')->nullable();
+            $table->text('resolution_note')->nullable();
             $table->timestamps();
         });
 
