@@ -32,6 +32,16 @@ class SmsCheckerDevice extends Model
         return $this->hasMany(SmsPaymentNotification::class, 'device_id', 'device_id');
     }
 
+    public static function findByApiKey(string $apiKey): ?self
+    {
+        return static::where('api_key', $apiKey)->first();
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
+    }
+
     public static function generateApiKey(): string
     {
         return 'ak_' . Str::random(32);

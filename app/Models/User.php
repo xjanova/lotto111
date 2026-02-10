@@ -125,6 +125,16 @@ class User extends Authenticatable
         return $this->hasMany(Message::class, 'receiver_id');
     }
 
+    public function notificationPreference(): HasOne
+    {
+        return $this->hasOne(NotificationPreference::class);
+    }
+
+    public function gamification(): HasOne
+    {
+        return $this->hasOne(UserGamification::class);
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Helpers

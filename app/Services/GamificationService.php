@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\TransactionType;
 use App\Enums\VipLevel;
 use App\Models\User;
 use App\Models\UserGamification;
@@ -157,7 +158,7 @@ class GamificationService
             }
 
             if ($mission->reward_credit > 0) {
-                app(BalanceService::class)->credit($user, $mission->reward_credit, "Mission reward: {$mission->title}");
+                app(BalanceService::class)->credit($user, $mission->reward_credit, "Mission reward: {$mission->title}", TransactionType::Bonus);
             }
 
             if ($mission->reward_spins > 0) {
@@ -227,7 +228,7 @@ class GamificationService
     {
         match ($reward->type) {
             'xp' => $this->awardXp($user, (int) $reward->value, 'spin_reward'),
-            'credit' => app(BalanceService::class)->credit($user, $reward->value, 'Lucky Spin Reward'),
+            'credit' => app(BalanceService::class)->credit($user, $reward->value, 'Lucky Spin Reward', TransactionType::Bonus),
             'badge' => $this->awardBadge($user, (int) $reward->value),
             default => null,
         };

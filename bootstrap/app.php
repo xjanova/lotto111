@@ -24,7 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'sms.device' => \App\Http\Middleware\VerifySmsCheckerDevice::class,
         ]);
 
-        $middleware->redirectGuestsTo(fn ($request) => $request->expectsJson() ? null : route('login'));
+        $middleware->redirectGuestsTo(function ($request) {
+            if ($request->expectsJson()) return null;
+            return str_starts_with($request->path(), 'admin') ? url('/admin/login') : url('/login');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

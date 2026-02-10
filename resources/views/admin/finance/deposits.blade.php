@@ -152,7 +152,7 @@
                         </td>
                         <td class="px-6 py-4">
                             @php $status = $tx['status'] ?? ''; @endphp
-                            @if($status === 'approved')
+                            @if($status === 'credited')
                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold rounded-full bg-emerald-50 text-emerald-600 uppercase tracking-wide">
                                     <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
                                     อนุมัติ

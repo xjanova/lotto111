@@ -17,11 +17,11 @@
                 <p class="text-white/70 text-sm">ศูนย์ควบคุมความเสี่ยง กำไร/ขาดทุน และการแจ้งเตือน</p>
             </div>
             <div class="flex items-center gap-3">
-                <a href="{{ route('admin.risk.alerts') }}" class="px-4 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2">
+                <button onclick="alert('Alerts: ไม่มีการแจ้งเตือนขณะนี้')" class="px-4 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                     Alerts
-                </a>
-                <a href="{{ route('admin.risk.settings') }}" class="px-4 py-2.5 bg-white text-indigo-700 rounded-xl text-sm font-bold transition-all duration-200 hover:shadow-lg hover:shadow-white/20 flex items-center gap-2">
+                </button>
+                <a href="{{ route('admin.settings.index') }}" class="px-4 py-2.5 bg-white text-indigo-700 rounded-xl text-sm font-bold transition-all duration-200 hover:shadow-lg hover:shadow-white/20 flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0"/></svg>
                     Risk Settings
                 </a>
@@ -170,14 +170,14 @@
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         @php
             $quickLinks = [
-                ['route' => 'admin.risk.users', 'label' => 'จัดการ User Risk', 'desc' => 'Win rate, block numbers', 'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', 'color_from' => '#e0e7ff', 'color_to' => '#c7d2fe', 'text_color' => 'text-indigo-600'],
-                ['route' => 'admin.risk.settings', 'label' => 'Risk Settings', 'desc' => 'Global risk parameters', 'icon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0', 'color_from' => '#ede9fe', 'color_to' => '#ddd6fe', 'text_color' => 'text-purple-600'],
-                ['route' => 'admin.risk.alerts', 'label' => 'Alerts', 'desc' => 'ดูการแจ้งเตือน', 'icon' => 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9', 'color_from' => '#fee2e2', 'color_to' => '#fecaca', 'text_color' => 'text-red-600'],
-                ['route' => 'admin.risk.profit-snapshots', 'label' => 'Profit Snapshots', 'desc' => 'ภาพรวมกำไร', 'icon' => 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', 'color_from' => '#d1fae5', 'color_to' => '#a7f3d0', 'text_color' => 'text-emerald-600'],
+                ['url' => url('/admin/members'), 'label' => 'จัดการ User Risk', 'desc' => 'Win rate, block numbers', 'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', 'color_from' => '#e0e7ff', 'color_to' => '#c7d2fe', 'text_color' => 'text-indigo-600'],
+                ['url' => url('/admin/settings'), 'label' => 'Risk Settings', 'desc' => 'Global risk parameters', 'icon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0', 'color_from' => '#ede9fe', 'color_to' => '#ddd6fe', 'text_color' => 'text-purple-600'],
+                ['url' => '#', 'label' => 'Alerts', 'desc' => 'ดูการแจ้งเตือน', 'icon' => 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9', 'color_from' => '#fee2e2', 'color_to' => '#fecaca', 'text_color' => 'text-red-600'],
+                ['url' => url('/admin/finance/report'), 'label' => 'Profit Snapshots', 'desc' => 'ภาพรวมกำไร', 'icon' => 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', 'color_from' => '#d1fae5', 'color_to' => '#a7f3d0', 'text_color' => 'text-emerald-600'],
             ];
         @endphp
         @foreach($quickLinks as $idx => $link)
-        <a href="{{ route($link['route']) }}" class="card-premium p-5 text-center group animate-fade-up delay-{{ ($idx + 5) * 100 }}">
+        <a href="{{ $link['url'] }}" class="card-premium p-5 text-center group animate-fade-up delay-{{ ($idx + 5) * 100 }}">
             <div class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style="background: linear-gradient(135deg, {{ $link['color_from'] }}, {{ $link['color_to'] }});">
                 <svg class="w-6 h-6 {{ $link['text_color'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $link['icon'] }}"/></svg>
             </div>

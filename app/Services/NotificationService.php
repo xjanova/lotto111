@@ -101,12 +101,12 @@ class NotificationService
 
     private function sendLine(User $user, string $title, string $body): void
     {
-        if (!$user->line_user_id) return;
+        if (!$user->line_id) return;
 
         $lineToken = config('services.line.channel_access_token');
 
         Http::withToken($lineToken)->post('https://api.line.me/v2/bot/message/push', [
-            'to' => $user->line_user_id,
+            'to' => $user->line_id,
             'messages' => [
                 [
                     'type' => 'text',
