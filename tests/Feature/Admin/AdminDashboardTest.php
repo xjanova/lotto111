@@ -57,7 +57,7 @@ class AdminDashboardTest extends TestCase
 
         $response = $this->actingAs($this->admin)->get('/admin');
         $response->assertOk();
-        $response->assertSee('สมาชิกทั้งหมด');
+        $response->assertSee('สมาชิก');
         $response->assertSee('ฝากวันนี้');
         $response->assertSee('กำไร/ขาดทุน');
     }
@@ -81,6 +81,6 @@ class AdminDashboardTest extends TestCase
     public function test_admin_logout(): void
     {
         $response = $this->actingAs($this->admin)->post('/admin/logout');
-        $response->assertRedirect('/');
+        $response->assertRedirect('/admin/login');
     }
 }

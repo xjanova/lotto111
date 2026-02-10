@@ -142,7 +142,7 @@ class SettingsController extends Controller
             ]);
         }
 
-        $logs = collect($paginated->items())->map(fn ($l) => [
+        $logs = $paginated->through(fn ($l) => [
             'id' => $l->id,
             'admin_name' => $l->admin?->name ?? '-',
             'action' => $l->action,
@@ -150,7 +150,7 @@ class SettingsController extends Controller
             'target_type' => $l->target_type,
             'target_id' => $l->target_id,
             'created_at' => $l->created_at?->format('d/m/Y H:i:s'),
-        ])->toArray();
+        ]);
 
         $actions = AdminLog::distinct()->pluck('action')->sort()->values()->toArray();
 

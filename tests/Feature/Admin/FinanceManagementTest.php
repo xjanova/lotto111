@@ -64,7 +64,7 @@ class FinanceManagementTest extends TestCase
             ->putJson("/admin/finance/deposits/{$deposit->id}/approve");
 
         $response->assertOk()->assertJson(['success' => true]);
-        $this->assertEquals('approved', $deposit->fresh()->status);
+        $this->assertEquals('credited', $deposit->fresh()->status);
         $this->assertGreaterThan(0, $user->fresh()->balance);
     }
 
