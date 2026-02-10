@@ -37,6 +37,11 @@ Route::get('/', function () {
     return view('welcome', compact('lotteryTypes', 'openRounds', 'latestResults', 'siteName', 'marquee'));
 });
 
+// OTP Login/Register
+Route::get('/login', function () {
+    return view('auth.otp-login');
+})->name('login');
+
 /*
 |--------------------------------------------------------------------------
 | Member Auth (web session - Firebase OTP)
