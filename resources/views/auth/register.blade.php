@@ -300,7 +300,7 @@
             name: '',
             password: '',
             passwordConfirm: '',
-            referralCode: '{{ $ref ?? "" }}',
+            referralCode: @json($ref ?? ''),
             showPass: false,
 
             // OTP state

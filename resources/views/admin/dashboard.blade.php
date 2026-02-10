@@ -275,7 +275,7 @@
                 <h3 class="text-sm font-bold text-gray-800">รอบที่เปิดอยู่</h3>
                 <p class="text-xs text-gray-400 mt-0.5">รอบหวยที่กำลังดำเนินการ</p>
             </div>
-            <a href="{{ route('admin.lottery.rounds') }}" class="btn-premium text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5">
+            <a href="{{ route('admin.lottery.index') }}" class="btn-premium text-white text-xs px-4 py-2 rounded-xl font-medium flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0"/></svg>
                 จัดการรอบ
             </a>

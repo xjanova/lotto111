@@ -27,6 +27,7 @@ class AffiliateCommission extends Model
             'commission_rate' => 'decimal:2',
             'commission' => 'decimal:2',
             'paid_at' => 'datetime',
+            'created_at' => 'datetime',
         ];
     }
 

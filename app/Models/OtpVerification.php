@@ -22,6 +22,7 @@ class OtpVerification extends Model
         return [
             'is_used' => 'boolean',
             'expires_at' => 'datetime',
+            'created_at' => 'datetime',
         ];
     }
 
