@@ -91,7 +91,7 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'สมัครสมาชิกสำเร็จ',
-            'redirect' => '/',
+            'redirect' => '/member',
         ]);
     }
 
@@ -140,7 +140,7 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         // Redirect admin users to admin panel
-        $redirect = $user->isAdmin() ? '/admin' : '/';
+        $redirect = $user->isAdmin() ? '/admin' : '/member';
 
         return response()->json([
             'success' => true,

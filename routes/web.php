@@ -3,6 +3,7 @@
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Web\AuthController;
+use App\Http\Controllers\Web\MemberController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +47,19 @@ Route::post('/register', [AuthController::class, 'register'])->middleware('guest
 Route::get('/login', [AuthController::class, 'showLogin'])->middleware('guest')->name('member.login');
 Route::post('/login', [AuthController::class, 'login'])->middleware('guest');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('member.logout');
+
+/*
+|--------------------------------------------------------------------------
+| Member Dashboard (authenticated)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth')->prefix('member')->name('member.')->group(function () {
+    Route::get('/', [MemberController::class, 'dashboard'])->name('dashboard');
+    Route::get('/referral', [MemberController::class, 'referral'])->name('referral');
+    Route::post('/referral/withdraw', [MemberController::class, 'withdrawCommission'])->name('referral.withdraw');
+    Route::get('/profile', [MemberController::class, 'profile'])->name('profile');
+    Route::put('/profile', [MemberController::class, 'updateProfile'])->name('profile.update');
+});
 
 /*
 |--------------------------------------------------------------------------
