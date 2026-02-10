@@ -85,24 +85,24 @@ Route::get('/admin/login', function () {
 
 Route::post('/admin/login', function (Request $request) {
     $credentials = $request->validate([
-        'phone' => 'required|string',
+        'username' => 'required|string',
         'password' => 'required|string',
     ]);
 
     if (! auth()->attempt($credentials, $request->boolean('remember'))) {
-        return back()->withErrors(['phone' => 'Phone or password is incorrect.'])->onlyInput('phone');
+        return back()->withErrors(['username' => 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'])->onlyInput('username');
     }
 
     $user = auth()->user();
 
     if (! $user->isAdmin()) {
         auth()->logout();
-        return back()->withErrors(['phone' => 'Access denied. Admin only.'])->onlyInput('phone');
+        return back()->withErrors(['username' => 'ไม่มีสิทธิ์เข้าใช้งาน เฉพาะแอดมินเท่านั้น'])->onlyInput('username');
     }
 
     if (! $user->isActive()) {
         auth()->logout();
-        return back()->withErrors(['phone' => 'Account is suspended.'])->onlyInput('phone');
+        return back()->withErrors(['username' => 'บัญชีถูกระงับการใช้งาน'])->onlyInput('username');
     }
 
     $request->session()->regenerate();
@@ -138,14 +138,16 @@ Route::post('/admin/setup', function (Request $request) {
 
     $validated = $request->validate([
         'name' => 'required|string|max:255',
-        'phone' => 'required|string|max:20|unique:users,phone',
+        'username' => 'required|string|max:50|unique:users,username',
+        'phone' => 'nullable|string|max:20|unique:users,phone',
         'email' => 'nullable|email|max:255|unique:users,email',
         'password' => 'required|string|min:8|confirmed',
     ]);
 
     $user = User::create([
         'name' => $validated['name'],
-        'phone' => $validated['phone'],
+        'username' => $validated['username'],
+        'phone' => $validated['phone'] ?? null,
         'email' => $validated['email'] ?? null,
         'password' => $validated['password'],
         'role' => UserRole::SuperAdmin,
