@@ -30,19 +30,19 @@
 
     {{-- Quick Actions --}}
     <div class="grid grid-cols-4 gap-3 animate-fade-up delay-100">
-        <a href="/" class="card-dark flex flex-col items-center gap-2 py-4 px-2 text-center group">
+        <a href="{{ route('member.lottery') }}" class="card-dark flex flex-col items-center gap-2 py-4 px-2 text-center group">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.1))">
                 <svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
             <span class="text-[11px] text-white/50 group-hover:text-gold-400 transition-colors font-medium">แทงหวย</span>
         </a>
-        <a href="#" class="card-dark flex flex-col items-center gap-2 py-4 px-2 text-center group">
+        <a href="{{ route('member.deposit') }}" class="card-dark flex flex-col items-center gap-2 py-4 px-2 text-center group">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.1))">
                 <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             </div>
             <span class="text-[11px] text-white/50 group-hover:text-emerald-400 transition-colors font-medium">เติมเงิน</span>
         </a>
-        <a href="#" class="card-dark flex flex-col items-center gap-2 py-4 px-2 text-center group">
+        <a href="{{ route('member.withdrawal') }}" class="card-dark flex flex-col items-center gap-2 py-4 px-2 text-center group">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,rgba(249,115,22,0.15),rgba(249,115,22,0.1))">
                 <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             </div>
@@ -108,11 +108,11 @@
     <div class="animate-fade-up delay-300">
         <div class="flex items-center justify-between mb-3">
             <h2 class="text-sm font-bold text-white">หวยที่เปิดอยู่</h2>
-            <a href="/" class="text-xs text-gold-400 hover:text-gold-300 transition-colors">ดูทั้งหมด</a>
+            <a href="{{ route('member.lottery') }}" class="text-xs text-gold-400 hover:text-gold-300 transition-colors">ดูทั้งหมด</a>
         </div>
         <div class="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
             @foreach($openRounds as $round)
-            <a href="/" class="card-dark p-4 min-w-[200px] flex-shrink-0 group">
+            <a href="{{ route('member.lottery') }}" class="card-dark p-4 min-w-[200px] flex-shrink-0 group">
                 <div class="text-xs text-white/30 mb-1">{{ $round->lotteryType?->name ?? 'หวย' }}</div>
                 <div class="text-sm font-semibold text-white group-hover:text-gold-400 transition-colors">{{ $round->name ?? 'งวด ' . ($round->draw_date ?? '') }}</div>
                 <div class="flex items-center gap-2 mt-2">
@@ -173,7 +173,7 @@
                 <svg class="w-6 h-6 text-white/10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
             </div>
             <p class="text-xs text-white/20">ยังไม่มีโพยวันนี้</p>
-            <a href="/" class="inline-block mt-3 btn-gold text-xs px-4 py-2 rounded-lg">แทงหวยเลย</a>
+            <a href="{{ route('member.lottery') }}" class="inline-block mt-3 btn-gold text-xs px-4 py-2 rounded-lg">แทงหวยเลย</a>
         </div>
         @endif
     </div>

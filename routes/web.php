@@ -55,6 +55,13 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 */
 Route::middleware('auth')->prefix('member')->name('member.')->group(function () {
     Route::get('/', [MemberController::class, 'dashboard'])->name('dashboard');
+    Route::get('/lottery', [MemberController::class, 'lottery'])->name('lottery');
+    Route::get('/tickets', [MemberController::class, 'tickets'])->name('tickets');
+    Route::get('/deposit', [MemberController::class, 'deposit'])->name('deposit');
+    Route::get('/withdrawal', [MemberController::class, 'withdrawal'])->name('withdrawal');
+    Route::get('/results', [MemberController::class, 'results'])->name('results');
+    Route::get('/transactions', [MemberController::class, 'transactions'])->name('transactions');
+    Route::get('/notifications', [MemberController::class, 'notifications'])->name('notifications');
     Route::get('/referral', [MemberController::class, 'referral'])->name('referral');
     Route::post('/referral/withdraw', [MemberController::class, 'withdrawCommission'])->name('referral.withdraw');
     Route::get('/profile', [MemberController::class, 'profile'])->name('profile');

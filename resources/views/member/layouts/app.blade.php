@@ -62,19 +62,14 @@
                 </a>
 
                 {{-- Desktop Nav --}}
-                <div class="hidden md:flex items-center gap-6">
-                    <a href="{{ route('member.dashboard') }}" class="nav-link text-sm font-medium {{ request()->routeIs('member.dashboard') ? 'active' : '' }}">
-                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                        หน้าหลัก
-                    </a>
-                    <a href="{{ route('member.referral') }}" class="nav-link text-sm font-medium {{ request()->routeIs('member.referral') ? 'active' : '' }}">
-                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                        แนะนำเพื่อน
-                    </a>
-                    <a href="{{ route('member.profile') }}" class="nav-link text-sm font-medium {{ request()->routeIs('member.profile') ? 'active' : '' }}">
-                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                        โปรไฟล์
-                    </a>
+                <div class="hidden md:flex items-center gap-5">
+                    <a href="{{ route('member.dashboard') }}" class="nav-link text-sm font-medium {{ request()->routeIs('member.dashboard') ? 'active' : '' }}">หน้าหลัก</a>
+                    <a href="{{ route('member.lottery') }}" class="nav-link text-sm font-medium {{ request()->routeIs('member.lottery*') ? 'active' : '' }}">แทงหวย</a>
+                    <a href="{{ route('member.tickets') }}" class="nav-link text-sm font-medium {{ request()->routeIs('member.tickets') ? 'active' : '' }}">โพยของฉัน</a>
+                    <a href="{{ route('member.results') }}" class="nav-link text-sm font-medium {{ request()->routeIs('member.results') ? 'active' : '' }}">ผลหวย</a>
+                    <a href="{{ route('member.deposit') }}" class="nav-link text-sm font-medium {{ request()->routeIs('member.deposit') ? 'active' : '' }}">เติมเงิน</a>
+                    <a href="{{ route('member.withdrawal') }}" class="nav-link text-sm font-medium {{ request()->routeIs('member.withdrawal') ? 'active' : '' }}">ถอนเงิน</a>
+                    <a href="{{ route('member.referral') }}" class="nav-link text-sm font-medium {{ request()->routeIs('member.referral') ? 'active' : '' }}">แนะนำ</a>
                 </div>
 
                 {{-- Balance + User --}}
@@ -95,6 +90,8 @@
                                 <div class="text-xs text-white/30">{{ auth()->user()->phone }}</div>
                             </div>
                             <a href="{{ route('member.profile') }}" class="block px-4 py-2 text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors">โปรไฟล์</a>
+                            <a href="{{ route('member.transactions') }}" class="block px-4 py-2 text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors">ประวัติรายการ</a>
+                            <a href="{{ route('member.tickets') }}" class="block px-4 py-2 text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors">โพยของฉัน</a>
                             <form method="POST" action="/logout">@csrf
                                 <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors">ออกจากระบบ</button>
                             </form>
@@ -113,19 +110,24 @@
     {{-- Mobile Bottom Nav --}}
     <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-white/5 safe-area-bottom" style="background:rgba(15,10,46,0.95);backdrop-filter:blur(20px)">
         <div class="flex items-center justify-around py-2">
-            <a href="/" class="flex flex-col items-center gap-0.5 py-1 px-3 text-white/30 hover:text-gold-400 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                <span class="text-[10px]">แทงหวย</span>
-            </a>
-            <a href="{{ route('member.dashboard') }}" class="flex flex-col items-center gap-0.5 py-1 px-3 {{ request()->routeIs('member.dashboard') ? 'text-gold-400' : 'text-white/30' }} hover:text-gold-400 transition-colors">
+            <a href="{{ route('member.dashboard') }}" class="flex flex-col items-center gap-0.5 py-1 px-2 {{ request()->routeIs('member.dashboard') ? 'text-gold-400' : 'text-white/30' }} hover:text-gold-400 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                 <span class="text-[10px]">หน้าหลัก</span>
             </a>
-            <a href="{{ route('member.referral') }}" class="flex flex-col items-center gap-0.5 py-1 px-3 {{ request()->routeIs('member.referral') ? 'text-gold-400' : 'text-white/30' }} hover:text-gold-400 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                <span class="text-[10px]">แนะนำ</span>
+            <a href="{{ route('member.lottery') }}" class="flex flex-col items-center gap-0.5 py-1 px-2 {{ request()->routeIs('member.lottery*') ? 'text-gold-400' : 'text-white/30' }} hover:text-gold-400 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span class="text-[10px]">แทงหวย</span>
             </a>
-            <a href="{{ route('member.profile') }}" class="flex flex-col items-center gap-0.5 py-1 px-3 {{ request()->routeIs('member.profile') ? 'text-gold-400' : 'text-white/30' }} hover:text-gold-400 transition-colors">
+            <a href="{{ route('member.results') }}" class="flex flex-col items-center gap-0.5 py-1 px-2 {{ request()->routeIs('member.results') ? 'text-gold-400' : 'text-white/30' }} hover:text-gold-400 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span class="text-[10px]">ผลหวย</span>
+            </a>
+            <a href="{{ route('member.notifications') }}" class="flex flex-col items-center gap-0.5 py-1 px-2 relative {{ request()->routeIs('member.notifications') ? 'text-gold-400' : 'text-white/30' }} hover:text-gold-400 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                <span class="absolute -top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                <span class="text-[10px]">แจ้งเตือน</span>
+            </a>
+            <a href="{{ route('member.profile') }}" class="flex flex-col items-center gap-0.5 py-1 px-2 {{ request()->routeIs('member.profile') ? 'text-gold-400' : 'text-white/30' }} hover:text-gold-400 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                 <span class="text-[10px]">โปรไฟล์</span>
             </a>
