@@ -53,8 +53,9 @@ class FinanceManageController extends Controller
         $todayDeposits = Deposit::whereDate('created_at', today())->where('status', 'credited')->sum('amount');
         $todayWithdrawals = Withdrawal::whereDate('created_at', today())->whereIn('status', ['approved', 'completed'])->sum('amount');
         $pendingCount = Deposit::where('status', 'pending')->count() + Withdrawal::where('status', 'pending')->count();
+        $totalBalance = \App\Models\User::sum('balance');
 
-        return view('admin.finance.deposits', compact('transactions', 'todayDeposits', 'todayWithdrawals', 'pendingCount'));
+        return view('admin.finance.deposits', compact('transactions', 'todayDeposits', 'todayWithdrawals', 'pendingCount', 'totalBalance', 'paginated'));
     }
 
     /**
@@ -151,7 +152,12 @@ class FinanceManageController extends Controller
             'created_at' => $w->created_at?->format('d/m/Y H:i'),
         ])->toArray();
 
-        return view('admin.finance.withdrawals', compact('withdrawals'));
+        $todayWithdrawals = Withdrawal::whereDate('created_at', today())->whereIn('status', ['approved', 'completed'])->sum('amount');
+        $pendingCount = Withdrawal::where('status', 'pending')->count();
+        $approvedCount = Withdrawal::whereDate('created_at', today())->whereIn('status', ['approved', 'completed'])->count();
+        $rejectedCount = Withdrawal::whereDate('created_at', today())->where('status', 'rejected')->count();
+
+        return view('admin.finance.withdrawals', compact('withdrawals', 'todayWithdrawals', 'pendingCount', 'approvedCount', 'rejectedCount', 'paginated'));
     }
 
     /**

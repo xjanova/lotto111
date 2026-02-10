@@ -323,8 +323,10 @@ function membersPage() {
 
         async submitCredit() {
             if (!this.creditForm.amount || this.creditForm.amount <= 0) return alert('กรุณากรอกจำนวน');
+            if (!this.creditForm.reason) return alert('กรุณากรอกหมายเหตุ');
+            const amount = this.creditForm.type === 'deduct' ? -Math.abs(this.creditForm.amount) : Math.abs(this.creditForm.amount);
             const res = await fetchApi('/admin/members/' + this.selectedMember.id + '/credit', {
-                method: 'POST', body: JSON.stringify(this.creditForm)
+                method: 'POST', body: JSON.stringify({ amount, reason: this.creditForm.reason })
             });
             if (res.success) { this.showCreditModal = false; location.reload(); }
             else alert(res.message || 'เกิดข้อผิดพลาด');
