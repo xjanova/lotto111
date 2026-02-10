@@ -68,8 +68,15 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-indigo-200 mb-1.5">เบอร์โทรศัพท์</label>
-                    <input type="text" name="phone" value="{{ old('phone') }}" required placeholder="0812345678"
+                    <label class="block text-sm font-medium text-indigo-200 mb-1.5">ชื่อผู้ใช้ (ID)</label>
+                    <input type="text" name="username" value="{{ old('username') }}" required placeholder="admin"
+                           class="w-full px-4 py-3 rounded-xl text-white placeholder-indigo-400/40 border border-indigo-500/30 text-sm input-glow transition-all focus:border-indigo-400"
+                           style="background: rgba(99,102,241,0.08);">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-indigo-200 mb-1.5">เบอร์โทรศัพท์ <span class="text-indigo-400/40">(ไม่บังคับ)</span></label>
+                    <input type="text" name="phone" value="{{ old('phone') }}" placeholder="0812345678"
                            class="w-full px-4 py-3 rounded-xl text-white placeholder-indigo-400/40 border border-indigo-500/30 text-sm input-glow transition-all focus:border-indigo-400"
                            style="background: rgba(99,102,241,0.08);">
                 </div>
