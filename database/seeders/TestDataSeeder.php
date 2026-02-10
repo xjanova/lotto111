@@ -8,7 +8,6 @@ use App\Enums\VipLevel;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class TestDataSeeder extends Seeder
 {
@@ -20,7 +19,8 @@ class TestDataSeeder extends Seeder
             ['email' => 'superadmin@lotto.test'],
             [
                 'name' => 'Super Admin',
-                'phone' => '0999999999',
+                'username' => 'superadmin',
+                'phone' => '0900000001',
                 'password' => Hash::make('password'),
                 'role' => UserRole::SuperAdmin,
                 'status' => UserStatus::Active,
@@ -36,7 +36,8 @@ class TestDataSeeder extends Seeder
             ['email' => 'admin@lotto.test'],
             [
                 'name' => 'Admin',
-                'phone' => '0888888888',
+                'username' => 'admin',
+                'phone' => '0900000002',
                 'password' => Hash::make('password'),
                 'role' => UserRole::Admin,
                 'status' => UserStatus::Active,
@@ -54,7 +55,8 @@ class TestDataSeeder extends Seeder
             ['email' => 'agent@lotto.test'],
             [
                 'name' => 'Agent Demo',
-                'phone' => '0877777777',
+                'username' => 'agent01',
+                'phone' => '0900000003',
                 'password' => Hash::make('password'),
                 'role' => UserRole::Agent,
                 'status' => UserStatus::Active,
@@ -72,7 +74,8 @@ class TestDataSeeder extends Seeder
             ['email' => 'user1@lotto.test'],
             [
                 'name' => 'สมชาย ทดสอบ',
-                'phone' => '0811111111',
+                'username' => 'somchai',
+                'phone' => '0900000011',
                 'password' => Hash::make('password'),
                 'role' => UserRole::Member,
                 'status' => UserStatus::Active,
@@ -88,7 +91,8 @@ class TestDataSeeder extends Seeder
             ['email' => 'user2@lotto.test'],
             [
                 'name' => 'สมหญิง ทดสอบ',
-                'phone' => '0822222222',
+                'username' => 'somying',
+                'phone' => '0900000012',
                 'password' => Hash::make('password'),
                 'role' => UserRole::Member,
                 'status' => UserStatus::Active,
@@ -105,7 +109,8 @@ class TestDataSeeder extends Seeder
             ['email' => 'user3@lotto.test'],
             [
                 'name' => 'วิชัย เงินดี',
-                'phone' => '0833333333',
+                'username' => 'wichai',
+                'phone' => '0900000013',
                 'password' => Hash::make('password'),
                 'role' => UserRole::Member,
                 'status' => UserStatus::Active,
@@ -122,7 +127,8 @@ class TestDataSeeder extends Seeder
             ['email' => 'user4@lotto.test'],
             [
                 'name' => 'มานี รวยมาก',
-                'phone' => '0844444444',
+                'username' => 'manee',
+                'phone' => '0900000014',
                 'password' => Hash::make('password'),
                 'role' => UserRole::Member,
                 'status' => UserStatus::Active,
@@ -140,7 +146,8 @@ class TestDataSeeder extends Seeder
             ['email' => 'suspended@lotto.test'],
             [
                 'name' => 'ยูสเซอร์ถูกระงับ',
-                'phone' => '0855555555',
+                'username' => 'suspended',
+                'phone' => '0900000021',
                 'password' => Hash::make('password'),
                 'role' => UserRole::Member,
                 'status' => UserStatus::Suspended,
@@ -156,7 +163,8 @@ class TestDataSeeder extends Seeder
             ['email' => 'banned@lotto.test'],
             [
                 'name' => 'ยูสเซอร์ถูกแบน',
-                'phone' => '0866666666',
+                'username' => 'banned',
+                'phone' => '0900000022',
                 'password' => Hash::make('password'),
                 'role' => UserRole::Member,
                 'status' => UserStatus::Banned,
@@ -170,17 +178,17 @@ class TestDataSeeder extends Seeder
 
         $this->command->info('Test data seeded successfully!');
         $this->command->table(
-            ['Role', 'Email', 'Password', 'Status'],
+            ['Role', 'Username', 'Email', 'Password', 'Status'],
             [
-                ['Super Admin', 'superadmin@lotto.test', 'password', 'Active'],
-                ['Admin', 'admin@lotto.test', 'password', 'Active'],
-                ['Agent', 'agent@lotto.test', 'password', 'Active'],
-                ['Member', 'user1@lotto.test', 'password', 'Active'],
-                ['Member', 'user2@lotto.test', 'password', 'Active'],
-                ['Member (VIP Diamond)', 'user3@lotto.test', 'password', 'Active'],
-                ['Member (New)', 'user4@lotto.test', 'password', 'Active'],
-                ['Member', 'suspended@lotto.test', 'password', 'Suspended'],
-                ['Member', 'banned@lotto.test', 'password', 'Banned'],
+                ['Super Admin', 'superadmin', 'superadmin@lotto.test', 'password', 'Active'],
+                ['Admin', 'admin', 'admin@lotto.test', 'password', 'Active'],
+                ['Agent', 'agent01', 'agent@lotto.test', 'password', 'Active'],
+                ['Member', 'somchai', 'user1@lotto.test', 'password', 'Active'],
+                ['Member', 'somying', 'user2@lotto.test', 'password', 'Active'],
+                ['Member (VIP Diamond)', 'wichai', 'user3@lotto.test', 'password', 'Active'],
+                ['Member (New)', 'manee', 'user4@lotto.test', 'password', 'Active'],
+                ['Member', 'suspended', 'suspended@lotto.test', 'password', 'Suspended'],
+                ['Member', 'banned', 'banned@lotto.test', 'password', 'Banned'],
             ]
         );
     }

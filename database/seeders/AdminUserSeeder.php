@@ -15,6 +15,7 @@ class AdminUserSeeder extends Seeder
             ['email' => 'admin@lotto.local'],
             [
                 'name' => 'Super Admin',
+                'username' => 'admin_local',
                 'phone' => '0999999999',
                 'password' => Hash::make('admin1234'),
                 'role' => 'admin',
