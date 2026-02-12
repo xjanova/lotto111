@@ -72,7 +72,7 @@ class DemoModeService
         ];
     }
 
-    private function cleanupDemoData(): void
+    public function cleanupDemoData(): void
     {
         $demoUserIds = DB::table('users')
             ->where('email', 'like', '%' . self::DEMO_EMAIL_DOMAIN)

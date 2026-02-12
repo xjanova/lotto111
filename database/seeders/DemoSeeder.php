@@ -46,6 +46,9 @@ class DemoSeeder extends Seeder
 
     public function run(): void
     {
+        $this->command?->info('Cleaning up old demo data...');
+        app(\App\Services\DemoModeService::class)->cleanupDemoData();
+
         $this->command?->info('Seeding demo data...');
 
         // Get or create admin for references
