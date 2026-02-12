@@ -45,6 +45,18 @@
 </head>
 <body class="font-sans antialiased text-white min-h-screen" style="background:linear-gradient(180deg,#0f0a2e 0%,#1e1b4b 50%,#0f0a2e 100%)">
 
+    {{-- Demo Banner --}}
+    @if(\App\Models\Setting::getValue('demo_mode', false))
+    <div class="fixed top-0 left-0 right-0 z-[60] text-center py-1.5" style="background: linear-gradient(90deg, #f59e0b, #ef4444, #f59e0b); background-size: 200% 100%; animation: gradientShift 3s ease infinite;">
+        <div class="flex items-center justify-center gap-2">
+            <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+            <span class="text-xs font-bold text-white tracking-wider uppercase">DEMO MODE</span>
+            <span class="text-xs text-white/80">— กำลังทดลองใช้งานด้วยข้อมูลจำลอง</span>
+        </div>
+    </div>
+    <style>@keyframes gradientShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}</style>
+    @endif
+
     {{-- Fixed Background Blobs --}}
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
         <div class="absolute -top-40 -right-40 w-80 h-80 bg-purple-600/15 rounded-full filter blur-[100px] animate-blob"></div>

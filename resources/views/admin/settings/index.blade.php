@@ -27,6 +27,7 @@
                     ['key' => 'lottery', 'label' => 'หวย/แทง', 'icon' => 'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z'],
                     ['key' => 'affiliate', 'label' => 'Affiliate', 'icon' => 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1'],
                     ['key' => 'contact', 'label' => 'ติดต่อ', 'icon' => 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'],
+                    ['key' => 'demo', 'label' => 'Demo Mode', 'icon' => 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664zM21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
                 ];
             @endphp
             @foreach($tabList as $t)
@@ -380,6 +381,123 @@
         </form>
     </div>
 
+    {{-- Demo Mode --}}
+    <div x-show="tab==='demo'" x-transition class="space-y-6 animate-fade-up delay-200">
+        {{-- Demo Hero --}}
+        <div class="relative overflow-hidden rounded-2xl p-6 md:p-8" style="background: linear-gradient(135deg, #f59e0b, #f97316, #ef4444);">
+            <div class="absolute top-0 right-0 w-72 h-72 bg-white/10 rounded-full filter blur-3xl animate-blob"></div>
+            <div class="absolute bottom-0 left-0 w-56 h-56 bg-yellow-300/10 rounded-full filter blur-3xl animate-blob delay-200"></div>
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-lg text-xs font-bold text-white tracking-wider uppercase">DEMO MODE</span>
+                        <span x-show="demoActive" class="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/30 backdrop-blur-sm rounded-lg text-xs font-semibold text-white">
+                            <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span> เปิดอยู่
+                        </span>
+                        <span x-show="!demoActive" class="flex items-center gap-1.5 px-2.5 py-1 bg-white/10 backdrop-blur-sm rounded-lg text-xs font-semibold text-white/70">
+                            <span class="w-2 h-2 bg-gray-400 rounded-full"></span> ปิดอยู่
+                        </span>
+                    </div>
+                    <h2 class="text-xl md:text-2xl font-bold text-white mb-1">ระบบจำลองสาธิต (Demo)</h2>
+                    <p class="text-white/70 text-sm">สร้างข้อมูลจำลองสมจริงครบวงจรสำหรับนำเสนอระบบให้ลูกค้า</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <template x-if="!demoActive">
+                        <button @click="activateDemo()" :disabled="demoLoading"
+                                class="px-6 py-3 bg-white text-orange-600 rounded-xl text-sm font-bold transition-all duration-200 hover:shadow-lg hover:shadow-white/20 flex items-center gap-2 disabled:opacity-50">
+                            <template x-if="!demoLoading">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664zM21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </template>
+                            <template x-if="demoLoading">
+                                <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                            </template>
+                            <span x-text="demoLoading ? 'กำลังสร้างข้อมูล...' : 'เปิด Demo Mode'"></span>
+                        </button>
+                    </template>
+                    <template x-if="demoActive">
+                        <div class="flex gap-2">
+                            <button @click="refreshDemo()" :disabled="demoLoading"
+                                    class="px-4 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-xl text-sm font-medium transition-all flex items-center gap-2 disabled:opacity-50">
+                                <svg class="w-4 h-4" :class="demoLoading && 'animate-spin'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                รีเฟรช
+                            </button>
+                            <button @click="deactivateDemo()" :disabled="demoLoading"
+                                    class="px-4 py-2.5 bg-red-600/80 hover:bg-red-600 text-white rounded-xl text-sm font-medium transition-all flex items-center gap-2 disabled:opacity-50">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 10a1 1 0 011-1h4a1 1 0 110 2h-4a1 1 0 01-1-1z"/></svg>
+                                ปิด Demo
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        {{-- Demo Stats --}}
+        <template x-if="demoActive && demoCounts">
+            <div class="card-premium p-6">
+                <h3 class="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, #fef3c7, #fde68a);">
+                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    </div>
+                    ข้อมูลจำลองที่สร้างแล้ว
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div class="text-center p-4 bg-blue-50 rounded-xl">
+                        <div class="text-2xl font-bold text-blue-600" x-text="demoCounts.users || 0"></div>
+                        <div class="text-xs text-gray-500 mt-1">สมาชิกจำลอง</div>
+                    </div>
+                    <div class="text-center p-4 bg-purple-50 rounded-xl">
+                        <div class="text-2xl font-bold text-purple-600" x-text="demoCounts.tickets || 0"></div>
+                        <div class="text-xs text-gray-500 mt-1">โพย</div>
+                    </div>
+                    <div class="text-center p-4 bg-emerald-50 rounded-xl">
+                        <div class="text-2xl font-bold text-emerald-600" x-text="demoCounts.deposits || 0"></div>
+                        <div class="text-xs text-gray-500 mt-1">รายการฝาก</div>
+                    </div>
+                    <div class="text-center p-4 bg-orange-50 rounded-xl">
+                        <div class="text-2xl font-bold text-orange-600" x-text="demoCounts.withdrawals || 0"></div>
+                        <div class="text-xs text-gray-500 mt-1">รายการถอน</div>
+                    </div>
+                    <div class="text-center p-4 bg-indigo-50 rounded-xl">
+                        <div class="text-2xl font-bold text-indigo-600" x-text="demoCounts.transactions || 0"></div>
+                        <div class="text-xs text-gray-500 mt-1">ธุรกรรม</div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        {{-- Info Cards --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="card-premium p-6">
+                <h3 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    สิ่งที่ Demo Mode สร้าง
+                </h3>
+                <ul class="space-y-2 text-sm text-gray-600">
+                    <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-blue-400 rounded-full"></span> สมาชิกจำลอง 30 คน (หลากหลาย VIP Level)</li>
+                    <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-purple-400 rounded-full"></span> รอบหวย 7 วันย้อนหลัง + รอบเปิด + รอบอนาคต</li>
+                    <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span> โพยหวยจำลอง ~500 ใบ (ชนะ 15%, แพ้ 75%, รอผล 10%)</li>
+                    <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-orange-400 rounded-full"></span> รายการฝาก 100 รายการ + ถอน 50 รายการ</li>
+                    <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-indigo-400 rounded-full"></span> ธุรกรรมการเงินครบวงจร 1,000+ รายการ</li>
+                    <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 bg-rose-400 rounded-full"></span> Risk Profile, Alerts, กราฟ, Affiliate, ข้อความ</li>
+                </ul>
+            </div>
+            <div class="card-premium p-6">
+                <h3 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    หมายเหตุ
+                </h3>
+                <ul class="space-y-2 text-sm text-gray-600">
+                    <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 bg-amber-400 rounded-full mt-1.5 flex-shrink-0"></span> ข้อมูลจำลองจะแสดงใน Dashboard, สมาชิก, การเงิน, Risk Control ทุกหน้า</li>
+                    <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 bg-amber-400 rounded-full mt-1.5 flex-shrink-0"></span> Banner "DEMO" จะแสดงด้านบนเสมอเมื่อเปิดใช้งาน</li>
+                    <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 bg-red-400 rounded-full mt-1.5 flex-shrink-0"></span> เมื่อปิด Demo Mode ข้อมูลจำลองจะถูกลบทั้งหมดทันที</li>
+                    <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 bg-emerald-400 rounded-full mt-1.5 flex-shrink-0"></span> ข้อมูลจริง (Admin, Settings, ประเภทหวย) จะไม่ถูกกระทบ</li>
+                    <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5 flex-shrink-0"></span> Demo User Login: demo_1@demo.lotto / demo1234</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
     {{-- Toast --}}
     <div x-show="showToast" x-cloak x-transition
          class="fixed bottom-6 right-6 z-50 overflow-hidden rounded-xl shadow-2xl animate-fade-up" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
@@ -397,10 +515,79 @@
 <script>
 function settingsPage() {
     return {
-        tab: 'general',
+        tab: new URLSearchParams(window.location.search).get('tab') || 'general',
         showToast: false,
         toastMsg: '',
         settings: @json($settings ?? []),
+
+        // Demo mode state
+        demoActive: {{ \App\Models\Setting::getValue('demo_mode', false) ? 'true' : 'false' }},
+        demoLoading: false,
+        demoCounts: null,
+
+        init() {
+            if (this.demoActive) this.loadDemoStatus();
+        },
+
+        async loadDemoStatus() {
+            const res = await fetchApi('{{ route("admin.demo.status") }}');
+            if (res.success && res.data) {
+                this.demoActive = res.data.is_active;
+                this.demoCounts = res.data.counts;
+            }
+        },
+
+        async activateDemo() {
+            if (!confirm('เปิดโหมดสาธิต? ระบบจะสร้างข้อมูลจำลอง ~3,500 รายการ')) return;
+            this.demoLoading = true;
+            try {
+                const res = await fetchApi('{{ route("admin.demo.activate") }}', { method: 'POST' });
+                if (res.success) {
+                    this.demoActive = true;
+                    this.demoCounts = res.data?.counts;
+                    this.toast('เปิด Demo Mode สำเร็จ! (' + (res.data?.duration || 0) + 's)');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    alert(res.message || 'เกิดข้อผิดพลาด');
+                }
+            } finally {
+                this.demoLoading = false;
+            }
+        },
+
+        async deactivateDemo() {
+            if (!confirm('ปิดโหมดสาธิต? ข้อมูลจำลองทั้งหมดจะถูกลบ!')) return;
+            this.demoLoading = true;
+            try {
+                const res = await fetchApi('{{ route("admin.demo.deactivate") }}', { method: 'POST' });
+                if (res.success) {
+                    this.demoActive = false;
+                    this.demoCounts = null;
+                    this.toast('ปิด Demo Mode สำเร็จ — ข้อมูลจำลองถูกลบแล้ว');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    alert(res.message || 'เกิดข้อผิดพลาด');
+                }
+            } finally {
+                this.demoLoading = false;
+            }
+        },
+
+        async refreshDemo() {
+            if (!confirm('รีเฟรชข้อมูลจำลอง? (ลบของเก่า + สร้างใหม่)')) return;
+            this.demoLoading = true;
+            try {
+                const res = await fetchApi('{{ route("admin.demo.refresh") }}', { method: 'POST' });
+                if (res.success) {
+                    this.demoCounts = res.data?.counts;
+                    this.toast('รีเฟรชข้อมูลจำลองสำเร็จ!');
+                } else {
+                    alert(res.message || 'เกิดข้อผิดพลาด');
+                }
+            } finally {
+                this.demoLoading = false;
+            }
+        },
 
         async saveSettings(group) {
             const res = await fetchApi('{{ route("admin.settings.update") }}', {

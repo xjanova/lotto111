@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SmsDepositController;
 use App\Http\Controllers\Admin\RiskControlController;
 use App\Http\Controllers\Admin\ResultSourceController;
+use App\Http\Controllers\Admin\DemoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -100,6 +101,14 @@ Route::middleware(['admin.only'])->prefix('admin')->name('admin.')->group(functi
         Route::post('/{id}/fetch', [ResultSourceController::class, 'fetchNow'])->name('fetch');
         Route::post('/{id}/test', [ResultSourceController::class, 'testScrape'])->name('test');
         Route::get('/{id}/logs', [ResultSourceController::class, 'logs'])->name('logs');
+    });
+
+    // Demo Mode
+    Route::prefix('demo')->name('demo.')->group(function () {
+        Route::get('/status', [DemoController::class, 'status'])->name('status');
+        Route::post('/activate', [DemoController::class, 'activate'])->name('activate');
+        Route::post('/deactivate', [DemoController::class, 'deactivate'])->name('deactivate');
+        Route::post('/refresh', [DemoController::class, 'refresh'])->name('refresh');
     });
 
     // Risk Management & Profit Control

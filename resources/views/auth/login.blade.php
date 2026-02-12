@@ -113,6 +113,23 @@
                     </button>
                 </div>
 
+                {{-- Demo Login Button --}}
+                @if(\App\Models\Setting::getValue('demo_mode', false))
+                <div class="px-6 pb-2">
+                    <div class="relative">
+                        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/10"></div></div>
+                        <div class="relative flex justify-center text-xs"><span class="px-3 text-white/30" style="background: rgba(255,255,255,0.05);">หรือ</span></div>
+                    </div>
+                    <button @click="demoLogin()" :disabled="loading"
+                            class="w-full mt-3 py-3 rounded-xl text-sm font-bold text-white transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                            style="background: linear-gradient(135deg, #f59e0b, #ef4444); border: 1px solid rgba(255,255,255,0.1);">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664zM21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        ทดลองใช้งาน (Demo)
+                    </button>
+                    <p class="text-center text-[10px] text-white/25 mt-2">เข้าใช้งานด้วยบัญชีจำลอง ข้อมูลไม่ใช่ของจริง</p>
+                </div>
+                @endif
+
                 {{-- Footer Link --}}
                 <div class="px-6 py-4 border-t border-white/5 text-center">
                     <span class="text-sm text-white/30">ยังไม่มีบัญชี?</span>
@@ -139,6 +156,31 @@
             remember: false,
             loading: false,
             error: '',
+
+            async demoLogin() {
+                this.loading = true;
+                this.error = '';
+                try {
+                    const res = await fetch('/demo-login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        },
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.location.href = data.redirect || '/member';
+                    } else {
+                        this.error = data.message || 'เกิดข้อผิดพลาด';
+                    }
+                } catch (err) {
+                    this.error = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
+                } finally {
+                    this.loading = false;
+                }
+            },
 
             async submit() {
                 if (!this.phone) { this.error = 'กรุณากรอกเบอร์โทรศัพท์'; return; }

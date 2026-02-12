@@ -55,6 +55,9 @@ class SettingsSeeder extends Seeder
             ['key' => 'max_bet', 'value' => '99999', 'group' => 'lottery', 'type' => 'integer'],
             ['key' => 'max_payout_per_ticket', 'value' => '500000', 'group' => 'lottery', 'type' => 'integer'],
 
+            // Demo Mode
+            ['key' => 'demo_mode', 'value' => '0', 'group' => 'general', 'type' => 'boolean'],
+
             // Contact
             ['key' => 'line_id', 'value' => '', 'group' => 'contact', 'type' => 'string'],
             ['key' => 'admin_phone', 'value' => '', 'group' => 'contact', 'type' => 'string'],
