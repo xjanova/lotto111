@@ -565,56 +565,35 @@ run_seeders() {
     log_step "Step 6.5 - Smart Seeding (Essential Data)"
     DEPLOY_PHASE="seeders"
 
-    # Essential seeders that use updateOrCreate — safe to re-run
-    # Order matters: LotteryType → BetType → BetTypeRate (FK dependency) → Settings → ResultSource (FK dependency)
+    # All essential seeders use updateOrCreate — idempotent, safe to re-run every deploy.
+    # Order matters: LotteryType → BetType → BetTypeRate (FK) → Settings → ResultSource (FK)
+    #
+    # NEVER auto-run: DemoSeeder (admin-triggered), AdminUserSeeder (/admin/setup), TestDataSeeder (dev)
+
     local ESSENTIAL_SEEDERS=(
-        "LotteryTypeSeeder:lottery_types"
-        "BetTypeSeeder:bet_types"
-        "BetTypeRateSeeder:bet_type_rates"
-        "SettingsSeeder:settings"
-        "ResultSourceSeeder:result_sources"
+        "LotteryTypeSeeder"
+        "BetTypeSeeder"
+        "BetTypeRateSeeder"
+        "SettingsSeeder"
+        "ResultSourceSeeder"
     )
 
-    # SKIP list: seeders that should NEVER auto-run on deploy
-    # - DemoSeeder: admin-triggered only (via /admin/demo/activate)
-    # - AdminUserSeeder: handled by /admin/setup wizard
-    # - TestDataSeeder: development only
+    local failed=0
 
-    local seeded=0
-
-    for entry in "${ESSENTIAL_SEEDERS[@]}"; do
-        local seeder_class="${entry%%:*}"
-        local table_name="${entry##*:}"
-
-        # Check if the table exists and is empty
-        local row_count
-        row_count=$(php artisan tinker --execute="echo \DB::table('${table_name}')->count();" 2>/dev/null | tr -d '[:space:]' || echo "-1")
-
-        if [ "$row_count" = "0" ]; then
-            log "Table '${table_name}' is empty — running ${seeder_class}..."
-            if php artisan db:seed --class="${seeder_class}" --force 2>&1; then
-                log "${seeder_class} completed"
-                seeded=$((seeded + 1))
-            else
-                log_warning "${seeder_class} failed — skipping (non-critical)"
-            fi
-        elif [ "$row_count" = "-1" ]; then
-            log_warning "Cannot check table '${table_name}' — skipping ${seeder_class}"
+    for seeder_class in "${ESSENTIAL_SEEDERS[@]}"; do
+        log "Running ${seeder_class}..."
+        if php artisan db:seed --class="${seeder_class}" --force 2>&1; then
+            log "${seeder_class} OK"
         else
-            log "${DIM}${table_name}: ${row_count} rows — skip ${seeder_class}${NC}"
+            log_warning "${seeder_class} failed — skipping (non-critical)"
+            failed=$((failed + 1))
         fi
     done
 
-    # Special: SettingsSeeder always re-runs to pick up new keys (uses updateOrCreate)
-    if [ "$seeded" -eq 0 ]; then
-        log "Re-syncing settings (new keys only)..."
-        php artisan db:seed --class=SettingsSeeder --force 2>/dev/null || log_warning "SettingsSeeder re-sync failed"
-    fi
-
-    if [ $seeded -gt 0 ]; then
-        log_fix "Seeded ${seeded} empty table(s) with essential data"
+    if [ $failed -eq 0 ]; then
+        log_fix "All essential seeders completed (${#ESSENTIAL_SEEDERS[@]} seeders)"
     else
-        log "All essential tables already populated"
+        log_warning "${failed}/${#ESSENTIAL_SEEDERS[@]} seeders failed"
     fi
 }
 
