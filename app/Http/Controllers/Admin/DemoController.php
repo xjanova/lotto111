@@ -27,7 +27,7 @@ class DemoController extends Controller
         $result = $this->demoService->activate();
 
         AdminLog::log(
-            $request->user()?->id ?? 0,
+            $request->user()?->id,
             'demo_activate',
             'เปิดโหมดสาธิต (Demo Mode) — สร้างข้อมูลจำลอง ' . ($result['counts']['users'] ?? 0) . ' users'
         );
@@ -54,7 +54,7 @@ class DemoController extends Controller
         $result = $this->demoService->deactivate();
 
         AdminLog::log(
-            $request->user()?->id ?? 0,
+            $request->user()?->id,
             'demo_deactivate',
             'ปิดโหมดสาธิต (Demo Mode) — ลบข้อมูลจำลองทั้งหมด'
         );
@@ -74,7 +74,7 @@ class DemoController extends Controller
         $result = $this->demoService->refresh();
 
         AdminLog::log(
-            $request->user()?->id ?? 0,
+            $request->user()?->id,
             'demo_refresh',
             'รีเฟรชข้อมูลจำลอง (Demo Mode)'
         );
