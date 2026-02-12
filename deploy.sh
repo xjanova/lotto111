@@ -558,6 +558,67 @@ run_migrations() {
 }
 
 # ─────────────────────────────────────────
+# Smart Seeders (idempotent, essential data)
+# ─────────────────────────────────────────
+
+run_seeders() {
+    log_step "Step 6.5 - Smart Seeding (Essential Data)"
+    DEPLOY_PHASE="seeders"
+
+    # Essential seeders that use updateOrCreate — safe to re-run
+    # Order matters: LotteryType → BetType → BetTypeRate (FK dependency) → Settings → ResultSource (FK dependency)
+    local ESSENTIAL_SEEDERS=(
+        "LotteryTypeSeeder:lottery_types"
+        "BetTypeSeeder:bet_types"
+        "BetTypeRateSeeder:bet_type_rates"
+        "SettingsSeeder:settings"
+        "ResultSourceSeeder:result_sources"
+    )
+
+    # SKIP list: seeders that should NEVER auto-run on deploy
+    # - DemoSeeder: admin-triggered only (via /admin/demo/activate)
+    # - AdminUserSeeder: handled by /admin/setup wizard
+    # - TestDataSeeder: development only
+
+    local seeded=0
+
+    for entry in "${ESSENTIAL_SEEDERS[@]}"; do
+        local seeder_class="${entry%%:*}"
+        local table_name="${entry##*:}"
+
+        # Check if the table exists and is empty
+        local row_count
+        row_count=$(php artisan tinker --execute="echo \DB::table('${table_name}')->count();" 2>/dev/null | tr -d '[:space:]' || echo "-1")
+
+        if [ "$row_count" = "0" ]; then
+            log "Table '${table_name}' is empty — running ${seeder_class}..."
+            if php artisan db:seed --class="${seeder_class}" --force 2>&1; then
+                log "${seeder_class} completed"
+                seeded=$((seeded + 1))
+            else
+                log_warning "${seeder_class} failed — skipping (non-critical)"
+            fi
+        elif [ "$row_count" = "-1" ]; then
+            log_warning "Cannot check table '${table_name}' — skipping ${seeder_class}"
+        else
+            log "${DIM}${table_name}: ${row_count} rows — skip ${seeder_class}${NC}"
+        fi
+    done
+
+    # Special: SettingsSeeder always re-runs to pick up new keys (uses updateOrCreate)
+    if [ "$seeded" -eq 0 ]; then
+        log "Re-syncing settings (new keys only)..."
+        php artisan db:seed --class=SettingsSeeder --force 2>/dev/null || log_warning "SettingsSeeder re-sync failed"
+    fi
+
+    if [ $seeded -gt 0 ]; then
+        log_fix "Seeded ${seeded} empty table(s) with essential data"
+    else
+        log "All essential tables already populated"
+    fi
+}
+
+# ─────────────────────────────────────────
 # Build assets
 # ─────────────────────────────────────────
 
@@ -838,6 +899,7 @@ quick_deploy() {
     clear_caches
     install_dependencies
     run_migrations
+    run_seeders
     build_assets
     optimize_application
     fix_permissions
@@ -865,6 +927,7 @@ main() {
     pull_latest
     install_dependencies
     run_migrations
+    run_seeders
     build_assets
     clear_caches
     optimize_application
@@ -888,7 +951,7 @@ case "${1:-}" in
         echo "Usage: ./deploy.sh [option]"
         echo ""
         echo "Options:"
-        echo "  (none)          Full deployment (diagnose + pull + migrate + build)"
+        echo "  (none)          Full deployment (diagnose + pull + migrate + seed + build)"
         echo "  --quick, -q     Quick deploy (skip git pull & backup)"
         echo "  --diagnose, -d  Diagnose only (check environment, no deploy)"
         echo "  --rollback, -r  Rollback to a previous backup"
@@ -902,6 +965,8 @@ case "${1:-}" in
         echo "  - Low disk space (cleans old logs/caches)"
         echo "  - Build failures (retries with clean cache)"
         echo "  - Migration errors (diagnoses & reports clearly)"
+        echo "  - Empty essential tables (auto-seeds LotteryType, BetType, Settings, etc.)"
+        echo "  - New settings keys (re-syncs SettingsSeeder on every deploy)"
         echo ""
         ;;
     *)                main ;;
