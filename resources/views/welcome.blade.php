@@ -58,6 +58,18 @@
 </head>
 <body class="font-sans antialiased text-white" style="background:linear-gradient(180deg,#0f0a2e 0%,#1e1b4b 30%,#1a1145 60%,#0f0a2e 100%)">
 
+    {{-- Demo Banner --}}
+    @if(\App\Models\Setting::getValue('demo_mode', false))
+    <div class="fixed top-0 left-0 right-0 z-[60] text-center py-1.5" style="background: linear-gradient(90deg, #f59e0b, #ef4444, #f59e0b); background-size: 200% 100%; animation: gradientShift 3s ease infinite;">
+        <div class="flex items-center justify-center gap-2">
+            <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+            <span class="text-xs font-bold text-white tracking-wider uppercase">DEMO MODE</span>
+            <span class="text-xs text-white/80">— ข้อมูลทั้งหมดเป็นข้อมูลจำลอง</span>
+        </div>
+    </div>
+    <style>@keyframes gradientShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}</style>
+    @endif
+
     {{-- Navbar --}}
     <nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-300" x-data="{ scrolled: false, mobileMenu: false }"
          @scroll.window="scrolled = window.scrollY > 50"

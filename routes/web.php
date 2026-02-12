@@ -75,6 +75,30 @@ Route::middleware('auth')->prefix('member')->name('member.')->group(function () 
 
 /*
 |--------------------------------------------------------------------------
+| Demo Auto-Login (only when demo_mode is active)
+|--------------------------------------------------------------------------
+*/
+Route::post('/demo-login', function () {
+    if (! \App\Models\Setting::getValue('demo_mode', false)) {
+        return response()->json(['success' => false, 'message' => 'Demo mode is not active'], 403);
+    }
+
+    $demoUser = User::where('email', 'demo_1@demo.lotto')
+        ->where('status', UserStatus::Active)
+        ->first();
+
+    if (! $demoUser) {
+        return response()->json(['success' => false, 'message' => 'ไม่พบบัญชีจำลอง กรุณาเปิด Demo Mode ที่หน้า Admin ก่อน']);
+    }
+
+    auth()->login($demoUser);
+    request()->session()->regenerate();
+
+    return response()->json(['success' => true, 'redirect' => '/member']);
+})->middleware('guest')->name('demo.login');
+
+/*
+|--------------------------------------------------------------------------
 | Admin Auth (web session)
 |--------------------------------------------------------------------------
 */
