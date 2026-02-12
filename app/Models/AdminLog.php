@@ -32,7 +32,7 @@ class AdminLog extends Model
     }
 
     public static function log(
-        int $adminId,
+        ?int $adminId,
         string $action,
         ?string $description = null,
         ?string $targetType = null,
