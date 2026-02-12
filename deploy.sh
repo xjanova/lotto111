@@ -371,31 +371,57 @@ pull_latest() {
         return 0
     fi
 
-    git stash --quiet 2>/dev/null || true
+    # Abort any in-progress merge/rebase that could block pull
+    git merge --abort 2>/dev/null || true
+    git rebase --abort 2>/dev/null || true
 
+    # Stash local changes (untracked files too)
+    git stash --include-untracked --quiet 2>/dev/null || true
+
+    # Reset any conflicted index state
+    git reset HEAD 2>/dev/null || true
+
+    # Fetch latest from remote
+    local fetched=false
     local retries=0
     local max_retries=3
-    local pulled=false
 
     while [ $retries -lt $max_retries ]; do
-        if git pull origin "$GIT_BRANCH" 2>/dev/null; then
-            pulled=true
+        if git fetch origin "$GIT_BRANCH" 2>/dev/null; then
+            fetched=true
             break
         fi
         retries=$((retries + 1))
-        log_warning "Git pull attempt ${retries}/${max_retries} failed, retrying in ${retries}s..."
+        log_warning "Git fetch attempt ${retries}/${max_retries} failed, retrying in ${retries}s..."
         sleep $retries
     done
 
-    if [ "$pulled" = false ]; then
-        log_warning "Git pull failed after ${max_retries} attempts, trying rebase..."
-        git pull --rebase origin "$GIT_BRANCH" 2>/dev/null || {
-            log_error "Git pull failed. Continuing with current code."
-            git rebase --abort 2>/dev/null || true
-        }
+    if [ "$fetched" = false ]; then
+        log_error "Git fetch failed after ${max_retries} attempts. Continuing with current code."
+        git stash pop --quiet 2>/dev/null || true
+        GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+        log "Code at commit: ${GIT_COMMIT}"
+        return 0
     fi
 
-    git stash pop --quiet 2>/dev/null || true
+    # Try normal pull first
+    if git pull origin "$GIT_BRANCH" 2>/dev/null; then
+        log "Git pull succeeded"
+    else
+        # Pull failed (conflict or dirty tree) — force-reset to match remote
+        log_warning "Git pull failed — resetting to origin/${GIT_BRANCH}"
+        git reset --hard "origin/${GIT_BRANCH}" 2>/dev/null || {
+            log_error "Git reset failed. Continuing with current code."
+        }
+        log_fix "Force-synced to origin/${GIT_BRANCH}"
+    fi
+
+    # Try to restore local changes, discard if they conflict
+    git stash pop --quiet 2>/dev/null || {
+        log_warning "Stashed changes conflict with new code — discarding stash"
+        git checkout -- . 2>/dev/null || true
+        git stash drop --quiet 2>/dev/null || true
+    }
 
     GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
     log "Code at commit: ${GIT_COMMIT}"
@@ -425,12 +451,47 @@ install_dependencies() {
 
     if command_exists npm; then
         log "Installing Node.js dependencies..."
-        npm ci --silent 2>/dev/null || npm install --silent 2>/dev/null || {
-            log_warning "npm install failed, trying clean install..."
+        local npm_ok=false
+
+        # Try 1: npm ci (fastest, uses lock file exactly)
+        if npm ci --silent 2>/dev/null; then
+            npm_ok=true
+        fi
+
+        # Try 2: npm install (resolves if lock file is slightly stale)
+        if [ "$npm_ok" = false ]; then
+            log_warning "npm ci failed, trying npm install..."
+            if npm install 2>/dev/null; then
+                npm_ok=true
+                log_fix "npm install succeeded"
+            fi
+        fi
+
+        # Try 3: clean cache + regenerate lock file from scratch
+        if [ "$npm_ok" = false ]; then
+            log_warning "npm install failed, cleaning cache & regenerating..."
+            npm cache clean --force 2>/dev/null || true
             rm -rf node_modules package-lock.json 2>/dev/null || true
-            npm install 2>/dev/null || log_warning "npm install failed - skipping"
-        }
-        log "Node.js dependencies installed"
+            if npm install 2>/dev/null; then
+                npm_ok=true
+                log_fix "Clean npm install succeeded after cache clear"
+            fi
+        fi
+
+        # Try 4: legacy peer deps (resolves stubborn peer dep conflicts)
+        if [ "$npm_ok" = false ]; then
+            log_warning "Retrying with --legacy-peer-deps..."
+            if npm install --legacy-peer-deps 2>/dev/null; then
+                npm_ok=true
+                log_fix "npm install succeeded with --legacy-peer-deps"
+            fi
+        fi
+
+        if [ "$npm_ok" = true ]; then
+            log "Node.js dependencies installed"
+        else
+            log_warning "All npm install attempts failed - skipping (frontend may use cached assets)"
+        fi
     else
         log_warning "NPM not available, skipping"
     fi
@@ -509,20 +570,41 @@ build_assets() {
         return 0
     fi
 
-    if npm run build 2>/dev/null; then
+    # Skip build if node_modules is missing (npm install failed earlier)
+    if [ ! -d "node_modules" ]; then
+        log_warning "node_modules missing (npm install may have failed), skipping build"
+        if [ -d "public/build" ] && [ "$(ls -A public/build 2>/dev/null)" ]; then
+            log "Using existing assets in public/build"
+        else
+            log_warning "No built assets available. Site may not display correctly."
+        fi
+        return 0
+    fi
+
+    # Try 1: normal build
+    if npm run build 2>&1; then
         log "Frontend assets built"
         return 0
     fi
 
-    log_warning "Build failed, attempting clean rebuild..."
+    # Try 2: clear vite cache and rebuild
+    log_warning "Build failed, clearing vite cache and retrying..."
     rm -rf node_modules/.vite 2>/dev/null || true
 
-    if npm run build 2>/dev/null; then
+    if npm run build 2>&1; then
         log_fix "Clean rebuild succeeded"
         return 0
     fi
 
-    # Check if built assets already exist
+    # Try 3: full reinstall of node_modules then build
+    log_warning "Rebuild failed, reinstalling node_modules..."
+    rm -rf node_modules 2>/dev/null || true
+    npm install 2>/dev/null && npm run build 2>&1 && {
+        log_fix "Full reinstall + build succeeded"
+        return 0
+    }
+
+    # Fallback: use existing assets
     if [ -d "public/build" ] && [ "$(ls -A public/build 2>/dev/null)" ]; then
         log_warning "Build failed but existing assets found in public/build - using those"
     else
