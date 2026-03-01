@@ -386,11 +386,19 @@
                             <span class="text-[10px] text-white/30">{{ $result->result_at?->format('d/m/Y H:i') ?? '-' }}</span>
                         </div>
                     </div>
-                    @if($result->results)
+                    @if($result->results->isNotEmpty())
+                    @php
+                        $typeLabels = [
+                            'three_digit_top' => '3 ตัวบน',
+                            'three_digit_bottom' => '3 ตัวล่าง',
+                            'two_digit_top' => '2 ตัวบน',
+                            'two_digit_bottom' => '2 ตัวล่าง',
+                        ];
+                    @endphp
                     <div class="flex flex-wrap gap-2">
-                        @foreach(array_slice((array)$result->results, 0, 5) as $key => $val)
+                        @foreach($result->results->take(5) as $res)
                         <div class="px-3 py-1.5 rounded-lg text-xs font-bold" style="background:rgba(251,191,36,0.08);color:#fbbf24;border:1px solid rgba(251,191,36,0.15)">
-                            {{ is_array($val) ? implode(' ', $val) : $val }}
+                            <span class="text-white/40 font-normal">{{ $typeLabels[$res->result_type] ?? $res->result_type }}:</span> {{ $res->result_value }}
                         </div>
                         @endforeach
                     </div>

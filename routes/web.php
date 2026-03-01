@@ -25,7 +25,7 @@ Route::get('/', function () {
         ->limit(6)
         ->get();
 
-    $latestResults = \App\Models\LotteryRound::with('lotteryType')
+    $latestResults = \App\Models\LotteryRound::with(['lotteryType', 'results'])
         ->where('status', 'resulted')
         ->orderByDesc('result_at')
         ->limit(6)
