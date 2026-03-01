@@ -1,0 +1,2011 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lotto Platform — แผนพัฒนาระบบหวยออนไลน์ครบวงจร</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   DESIGN TOKENS
+   Art Deco Luxury — Navy & Gold
+═══════════════════════════════════════ */
+:root {
+  --gold-50: #fdf8eb;
+  --gold-100: #f5e6b8;
+  --gold-200: #e8cc7a;
+  --gold-300: #d4af37;
+  --gold-400: #c9a227;
+  --gold-500: #b8922a;
+  --gold-600: #9a7822;
+  --gold-700: #7c5f1b;
+
+  --navy-50: #e8ecf5;
+  --navy-100: #c4cde0;
+  --navy-200: #8a99b8;
+  --navy-300: #5a6a8a;
+  --navy-400: #2d3a56;
+  --navy-500: #151d2e;
+  --navy-600: #0f1520;
+  --navy-700: #0a0e1a;
+  --navy-800: #060912;
+  --navy-900: #03050a;
+
+  --emerald: #34d399;
+  --emerald-dim: #059669;
+  --sky: #38bdf8;
+  --violet: #a78bfa;
+  --rose: #fb7185;
+  --amber: #fbbf24;
+  --cyan: #22d3ee;
+
+  --surface-0: var(--navy-800);
+  --surface-1: rgba(15, 21, 32, 0.85);
+  --surface-2: rgba(21, 29, 46, 0.75);
+  --surface-3: rgba(45, 58, 86, 0.4);
+  --glass: rgba(212, 175, 55, 0.04);
+  --glass-border: rgba(212, 175, 55, 0.12);
+  --glass-border-hover: rgba(212, 175, 55, 0.28);
+
+  --text-primary: #f1f0ec;
+  --text-secondary: #9ba3b5;
+  --text-tertiary: #5e6780;
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Noto Sans Thai', 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-xl: 32px;
+}
+
+/* ═══════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-padding-top: 80px;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--navy-800);
+  color: var(--text-primary);
+  line-height: 1.75;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(212, 175, 55, 0.3);
+  color: var(--gold-100);
+}
+
+img { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+
+/* ═══════════════════════════════════════
+   ANIMATED BACKGROUND CANVAS
+═══════════════════════════════════════ */
+.atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.atmosphere::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    radial-gradient(ellipse 800px 600px at 25% 15%, rgba(212, 175, 55, 0.07), transparent),
+    radial-gradient(ellipse 600px 500px at 75% 75%, rgba(56, 189, 248, 0.04), transparent),
+    radial-gradient(ellipse 900px 700px at 50% 50%, rgba(167, 139, 250, 0.03), transparent);
+  animation: atmosphereShift 25s ease-in-out infinite alternate;
+}
+
+@keyframes atmosphereShift {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-3%, 2%) scale(1.05); }
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  will-change: transform;
+}
+
+.orb--gold {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.15), transparent 70%);
+  top: -10%; left: -8%;
+  animation: orbFloat1 18s ease-in-out infinite;
+}
+
+.orb--blue {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.1), transparent 70%);
+  bottom: 10%; right: -5%;
+  animation: orbFloat2 22s ease-in-out infinite;
+}
+
+.orb--violet {
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.08), transparent 70%);
+  top: 40%; left: 60%;
+  animation: orbFloat3 20s ease-in-out infinite;
+}
+
+@keyframes orbFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, 30px) scale(1.1); }
+}
+@keyframes orbFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, -40px) scale(1.08); }
+}
+@keyframes orbFloat3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(20px, -25px) scale(1.05); }
+}
+
+/* Noise texture overlay */
+.noise {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px;
+}
+
+/* ═══════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════ */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: 0 clamp(16px, 4vw, 48px);
+  transition: all 0.4s var(--ease-out-expo);
+}
+
+.nav.scrolled {
+  background: rgba(6, 9, 18, 0.92);
+  backdrop-filter: blur(24px) saturate(1.2);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.nav-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.nav-brand-icon {
+  width: 42px;
+  height: 42px;
+  background: linear-gradient(135deg, var(--gold-300), var(--gold-600));
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 22px;
+  color: var(--navy-800);
+  box-shadow: 0 0 24px rgba(212, 175, 55, 0.2);
+  position: relative;
+}
+
+.nav-brand-icon::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--gold-200), transparent, var(--gold-400));
+  z-index: -1;
+  opacity: 0.4;
+}
+
+.nav-brand-text {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.nav-brand-text span {
+  background: linear-gradient(135deg, var(--gold-200), var(--gold-400));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+}
+
+.nav-links a {
+  display: block;
+  padding: 8px 18px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  transition: all 0.25s;
+  letter-spacing: 0.2px;
+}
+
+.nav-links a:hover {
+  color: var(--gold-300);
+  background: rgba(212, 175, 55, 0.06);
+}
+
+@media (max-width: 860px) {
+  .nav-links { display: none; }
+}
+
+/* ═══════════════════════════════════════
+   REVEAL ANIMATIONS
+═══════════════════════════════════════ */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.9s var(--ease-out-expo), transform 0.9s var(--ease-out-expo);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+.reveal-delay-5 { transition-delay: 0.5s; }
+.reveal-delay-6 { transition-delay: 0.6s; }
+.reveal-delay-7 { transition-delay: 0.7s; }
+.reveal-delay-8 { transition-delay: 0.8s; }
+
+.reveal-scale {
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity 0.8s var(--ease-out-expo), transform 0.8s var(--ease-out-expo);
+}
+
+.reveal-scale.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ═══════════════════════════════════════
+   SECTION LAYOUT
+═══════════════════════════════════════ */
+.section {
+  position: relative;
+  z-index: 2;
+  padding: clamp(60px, 10vw, 120px) clamp(16px, 4vw, 48px);
+}
+
+.section-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: clamp(40px, 6vw, 72px);
+}
+
+.section-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--gold-400);
+  margin-bottom: 20px;
+}
+
+.section-eyebrow::before,
+.section-eyebrow::after {
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-400));
+}
+
+.section-eyebrow::after {
+  background: linear-gradient(90deg, var(--gold-400), transparent);
+}
+
+.section-title {
+  font-family: var(--font-body);
+  font-size: clamp(28px, 4.5vw, 48px);
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.section-subtitle {
+  font-size: clamp(14px, 1.8vw, 17px);
+  color: var(--text-secondary);
+  max-width: 580px;
+  margin: 0 auto;
+  line-height: 1.8;
+}
+
+/* Decorative line separator */
+.separator {
+  position: relative;
+  z-index: 2;
+  height: 1px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+}
+
+.separator::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  background: var(--gold-400);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+}
+
+/* ═══════════════════════════════════════
+   HERO
+═══════════════════════════════════════ */
+.hero {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 100px clamp(16px, 4vw, 48px) 80px;
+  overflow: hidden;
+}
+
+/* Geometric deco lines */
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 700px;
+  height: 700px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(212, 175, 55, 0.06);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: heroRing 30s linear infinite;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 500px;
+  height: 500px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(212, 175, 55, 0.04);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: heroRing 25s linear infinite reverse;
+}
+
+@keyframes heroRing {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.hero-content {
+  max-width: 900px;
+  position: relative;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  background: rgba(212, 175, 55, 0.07);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold-300);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 40px;
+  animation: fadeInDown 0.8s var(--ease-out-expo) both;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-badge .pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--emerald);
+  position: relative;
+}
+
+.hero-badge .pulse-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--emerald);
+  animation: pingDot 2s ease-out infinite;
+}
+
+@keyframes pingDot {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+.hero h1 {
+  font-family: var(--font-body);
+  font-size: clamp(38px, 7vw, 80px);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -3px;
+  margin-bottom: 28px;
+  animation: fadeInUp 1s var(--ease-out-expo) 0.15s both;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero h1 .gold {
+  background: linear-gradient(135deg, var(--gold-100), var(--gold-300), var(--gold-500));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero h1 .italic {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.hero-desc {
+  font-size: clamp(15px, 2vw, 19px);
+  color: var(--text-secondary);
+  max-width: 620px;
+  margin: 0 auto 56px;
+  line-height: 1.85;
+  animation: fadeInUp 1s var(--ease-out-expo) 0.3s both;
+}
+
+/* Hero Stats Row */
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: clamp(24px, 5vw, 64px);
+  flex-wrap: wrap;
+  animation: fadeInUp 1s var(--ease-out-expo) 0.5s both;
+}
+
+.hero-stat {
+  text-align: center;
+  position: relative;
+}
+
+.hero-stat::after {
+  content: '';
+  position: absolute;
+  right: calc(-1 * clamp(12px, 2.5vw, 32px));
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, var(--glass-border), transparent);
+}
+
+.hero-stat:last-child::after { display: none; }
+
+.hero-stat-number {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 900;
+  letter-spacing: -2px;
+  line-height: 1;
+}
+
+.hero-stat-number.gold-text {
+  background: linear-gradient(135deg, var(--gold-100), var(--gold-300));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-stat-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  margin-top: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Scroll indicator */
+.scroll-hint {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: fadeInUp 1s var(--ease-out-expo) 1s both;
+}
+
+.scroll-hint span {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+.scroll-line {
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, var(--gold-400), transparent);
+  animation: scrollPulse 2s ease-in-out infinite;
+}
+
+@keyframes scrollPulse {
+  0%, 100% { opacity: 0.3; transform: scaleY(0.6); transform-origin: top; }
+  50% { opacity: 1; transform: scaleY(1); }
+}
+
+/* ═══════════════════════════════════════
+   CARDS — Glass morphism
+═══════════════════════════════════════ */
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: clamp(24px, 3vw, 40px);
+  backdrop-filter: blur(12px);
+  transition: all 0.4s var(--ease-out-expo);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.03), transparent 50%);
+  pointer-events: none;
+}
+
+.card:hover {
+  border-color: var(--glass-border-hover);
+  transform: translateY(-6px);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(212, 175, 55, 0.08) inset;
+}
+
+/* ═══════════════════════════════════════
+   STATUS SECTION
+═══════════════════════════════════════ */
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 48px;
+}
+
+@media (max-width: 900px) { .status-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 500px) { .status-grid { grid-template-columns: 1fr; } }
+
+.stat-card {
+  text-align: center;
+  padding: 32px 20px;
+}
+
+.stat-number {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 6px;
+  letter-spacing: -2px;
+}
+
+.stat-number.c-gold { color: var(--gold-300); }
+.stat-number.c-sky { color: var(--sky); }
+.stat-number.c-violet { color: var(--violet); }
+.stat-number.c-emerald { color: var(--emerald); }
+
+.stat-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Progress bars */
+.progress-section {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.progress-section .card { padding: clamp(28px, 4vw, 48px); }
+
+.progress-group {
+  margin-bottom: 24px;
+}
+
+.progress-group:last-child { margin-bottom: 0; }
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.progress-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.progress-pct {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-300);
+}
+
+.progress-track {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  width: 0;
+  transition: width 1.8s var(--ease-out-expo);
+}
+
+.progress-fill.gold-grad { background: linear-gradient(90deg, var(--gold-600), var(--gold-200)); }
+.progress-fill.sky-grad { background: linear-gradient(90deg, #0369a1, var(--sky)); }
+.progress-fill.violet-grad { background: linear-gradient(90deg, #6d28d9, var(--violet)); }
+.progress-fill.emerald-grad { background: linear-gradient(90deg, var(--emerald-dim), var(--emerald)); }
+.progress-fill.amber-grad { background: linear-gradient(90deg, #b45309, var(--amber)); }
+
+/* ═══════════════════════════════════════
+   FEATURES GRID
+═══════════════════════════════════════ */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 1000px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .features-grid { grid-template-columns: 1fr; } }
+
+.feature-card .icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.icon-wrap.gold-bg { background: rgba(212, 175, 55, 0.1); }
+.icon-wrap.sky-bg { background: rgba(56, 189, 248, 0.1); }
+.icon-wrap.rose-bg { background: rgba(251, 113, 133, 0.1); }
+.icon-wrap.emerald-bg { background: rgba(52, 211, 153, 0.1); }
+.icon-wrap.violet-bg { background: rgba(167, 139, 250, 0.1); }
+.icon-wrap.cyan-bg { background: rgba(34, 211, 238, 0.1); }
+.icon-wrap.amber-bg { background: rgba(251, 191, 36, 0.1); }
+
+.feature-card h3 {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.2px;
+}
+
+.feature-card .desc {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.75;
+  margin-bottom: 16px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+}
+
+.tag--gold { background: rgba(212, 175, 55, 0.1); color: var(--gold-300); }
+.tag--sky { background: rgba(56, 189, 248, 0.1); color: var(--sky); }
+.tag--emerald { background: rgba(52, 211, 153, 0.1); color: var(--emerald); }
+.tag--violet { background: rgba(167, 139, 250, 0.1); color: var(--violet); }
+.tag--rose { background: rgba(251, 113, 133, 0.1); color: var(--rose); }
+.tag--amber { background: rgba(251, 191, 36, 0.1); color: var(--amber); }
+.tag--cyan { background: rgba(34, 211, 238, 0.1); color: var(--cyan); }
+
+/* ═══════════════════════════════════════
+   TIMELINE
+═══════════════════════════════════════ */
+.timeline {
+  position: relative;
+  padding-left: 64px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 23px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--gold-400), var(--sky), var(--violet), var(--emerald));
+  border-radius: 2px;
+}
+
+.tl-item {
+  position: relative;
+  margin-bottom: 48px;
+}
+
+.tl-item:last-child { margin-bottom: 0; }
+
+.tl-dot {
+  position: absolute;
+  left: -64px;
+  top: 32px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 900;
+  z-index: 3;
+  box-shadow: 0 0 0 6px var(--navy-800);
+}
+
+.tl-dot--1 { background: linear-gradient(135deg, var(--gold-200), var(--gold-500)); color: var(--navy-800); }
+.tl-dot--2 { background: linear-gradient(135deg, var(--sky), #0284c7); color: var(--navy-800); }
+.tl-dot--3 { background: linear-gradient(135deg, var(--violet), #7c3aed); color: white; }
+.tl-dot--4 { background: linear-gradient(135deg, var(--emerald), var(--emerald-dim)); color: var(--navy-800); }
+
+.tl-card {
+  background: var(--surface-1);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: clamp(24px, 3vw, 36px);
+  backdrop-filter: blur(12px);
+  transition: all 0.35s var(--ease-out-expo);
+}
+
+.tl-card:hover {
+  border-color: var(--glass-border-hover);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+}
+
+.tl-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.tl-week {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--gold-400);
+}
+
+.tl-dates {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.tl-title {
+  font-size: clamp(18px, 2.5vw, 22px);
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: -0.3px;
+}
+
+.tl-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  line-height: 1.75;
+}
+
+.tl-tasks {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.tl-task {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.tl-task .bullet {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.bullet--pending {
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--gold-300);
+  border: 1.5px solid rgba(212, 175, 55, 0.25);
+}
+
+.tl-deliverables {
+  padding-top: 16px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.tl-deliverables-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-tertiary);
+  margin-bottom: 10px;
+}
+
+@media (max-width: 700px) {
+  .timeline { padding-left: 40px; }
+  .timeline::before { left: 13px; }
+  .tl-dot { left: -40px; width: 32px; height: 32px; font-size: 14px; box-shadow: 0 0 0 4px var(--navy-800); }
+}
+
+/* ═══════════════════════════════════════
+   BUDGET TABLE
+═══════════════════════════════════════ */
+.budget-wrap {
+  background: var(--surface-1);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+}
+
+.budget-head {
+  padding: 36px clamp(24px, 4vw, 48px) 20px;
+}
+
+.budget-head h3 {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+
+.budget-head p {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.budget-tbl {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.budget-tbl thead th {
+  padding: 16px clamp(24px, 4vw, 48px);
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-tertiary);
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.budget-tbl thead th:last-child { text-align: right; }
+
+.budget-tbl tbody td {
+  padding: 20px clamp(24px, 4vw, 48px);
+  font-size: 14.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.025);
+  vertical-align: top;
+}
+
+.budget-tbl tbody td:last-child {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--gold-300);
+  white-space: nowrap;
+}
+
+.budget-tbl tbody tr {
+  transition: background 0.2s;
+}
+
+.budget-tbl tbody tr:hover {
+  background: rgba(212, 175, 55, 0.025);
+}
+
+.budget-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 18px;
+  margin-right: 14px;
+  vertical-align: middle;
+}
+
+.budget-item-name {
+  font-weight: 700;
+}
+
+.budget-item-desc {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.budget-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32px clamp(24px, 4vw, 48px);
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.06), rgba(212, 175, 55, 0.02));
+  border-top: 2px solid rgba(212, 175, 55, 0.2);
+}
+
+.budget-total-label {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.budget-total-val {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--gold-100), var(--gold-400));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -1px;
+}
+
+/* ═══════════════════════════════════════
+   TECH STACK
+═══════════════════════════════════════ */
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.tech-pill {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: var(--surface-1);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  transition: all 0.3s var(--ease-out-expo);
+}
+
+.tech-pill:hover {
+  border-color: var(--glass-border-hover);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.tech-pill-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+.tech-pill-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.tech-pill-ver {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════
+   WHY CHOOSE US
+═══════════════════════════════════════ */
+.why-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 900px) { .why-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 550px) { .why-grid { grid-template-columns: 1fr; } }
+
+.why-card {
+  text-align: center;
+  padding: clamp(28px, 3vw, 44px) clamp(20px, 2vw, 32px);
+}
+
+.why-icon {
+  font-size: 44px;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.why-card h4 {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.why-card p {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.75;
+}
+
+/* ═══════════════════════════════════════
+   CTA
+═══════════════════════════════════════ */
+.cta {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: clamp(60px, 10vw, 120px) clamp(16px, 4vw, 48px);
+}
+
+.cta h2 {
+  font-family: var(--font-body);
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 16px;
+}
+
+.cta .cta-sub {
+  font-size: 16px;
+  color: var(--text-secondary);
+  max-width: 480px;
+  margin: 0 auto 44px;
+  line-height: 1.8;
+}
+
+.cta-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 40px;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  transition: all 0.35s var(--ease-out-expo);
+}
+
+.btn--gold {
+  background: linear-gradient(135deg, var(--gold-300), var(--gold-600));
+  color: var(--navy-800);
+  box-shadow: 0 8px 32px rgba(212, 175, 55, 0.25);
+}
+
+.btn--gold:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 48px rgba(212, 175, 55, 0.35);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border-hover);
+}
+
+.btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--gold-400);
+  color: var(--gold-300);
+}
+
+/* ═══════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════ */
+.footer {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 36px clamp(16px, 4vw, 48px);
+  border-top: 1px solid var(--glass-border);
+}
+
+.footer p {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.footer p + p { margin-top: 6px; }
+
+/* ═══════════════════════════════════════
+   COUNTER ANIMATION
+═══════════════════════════════════════ */
+.counter[data-target] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═══════════════════════════════════════
+   PRINT
+═══════════════════════════════════════ */
+@media print {
+  .atmosphere, .noise, .nav, .scroll-hint { display: none !important; }
+  body { background: #fff; color: #111; }
+  .section { padding: 32px 0; }
+  .card, .tl-card, .budget-wrap, .stat-card, .tech-pill, .why-card {
+    background: #f8f8f8;
+    border-color: #ddd;
+    box-shadow: none;
+    backdrop-filter: none;
+    transform: none !important;
+  }
+  .hero { min-height: auto; padding: 60px 0 40px; }
+  .hero::before, .hero::after { display: none; }
+  .gold, .gold-text, .hero-stat-number.gold-text, .stat-number.c-gold, .budget-total-val {
+    -webkit-text-fill-color: #96751a !important;
+    color: #96751a !important;
+  }
+  .progress-fill { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Atmosphere -->
+<div class="atmosphere">
+  <div class="orb orb--gold"></div>
+  <div class="orb orb--blue"></div>
+  <div class="orb orb--violet"></div>
+</div>
+<div class="noise"></div>
+
+<!-- ══════════ NAVIGATION ══════════ -->
+<nav class="nav" id="mainNav">
+  <div class="nav-inner">
+    <div class="nav-brand">
+      <div class="nav-brand-icon">L</div>
+      <div class="nav-brand-text"><span>Lotto</span> Platform</div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#status">สถานะ</a></li>
+      <li><a href="#features">ฟีเจอร์</a></li>
+      <li><a href="#roadmap">แผนงาน</a></li>
+      <li><a href="#budget">งบประมาณ</a></li>
+      <li><a href="#tech">เทคโนโลยี</a></li>
+      <li><a href="#why">ทำไมเรา</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ══════════ HERO ══════════ -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="pulse-dot"></span>
+      Development Proposal — March 2026
+    </div>
+
+    <h1>
+      ระบบ<span class="gold">หวยออนไลน์</span><br>
+      <span class="italic">ครบวงจร</span>
+    </h1>
+
+    <p class="hero-desc">
+      แพลตฟอร์มหวยออนไลน์ระดับ Premium รองรับหวยรัฐบาล, ยี่กี 144 รอบ/วัน,
+      หวยต่างประเทศ พร้อมระบบฝาก-ถอนอัตโนมัติ, บริหารความเสี่ยงอัจฉริยะ
+      และ Real-time Dashboard
+    </p>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-number gold-text counter" data-target="30">0</div>
+        <div class="hero-stat-label">วันพัฒนา</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-number gold-text">200<span style="font-size:0.55em;letter-spacing:0;">K</span></div>
+        <div class="hero-stat-label">งบประมาณ (บาท)</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-number gold-text counter" data-target="70" data-suffix="%">0</div>
+        <div class="hero-stat-label">พัฒนาแล้ว</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-number gold-text counter" data-target="42" data-suffix="+">0</div>
+        <div class="hero-stat-label">โมดูลระบบ</div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<div class="separator"></div>
+
+<!-- ══════════ STATUS ══════════ -->
+<section class="section" id="status">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-eyebrow">Project Status</div>
+      <h2 class="section-title">สถานะโครงการปัจจุบัน</h2>
+      <p class="section-subtitle">ระบบพัฒนาไปแล้วกว่า 70% เหลือเพียงขัดเกลา UI ทดสอบ และ Deploy สู่ Production</p>
+    </div>
+
+    <div class="status-grid">
+      <div class="card stat-card reveal reveal-delay-1">
+        <div class="stat-number c-gold counter" data-target="134">0</div>
+        <div class="stat-label">PHP Classes</div>
+      </div>
+      <div class="card stat-card reveal reveal-delay-2">
+        <div class="stat-number c-sky counter" data-target="42">0</div>
+        <div class="stat-label">Database Models</div>
+      </div>
+      <div class="card stat-card reveal reveal-delay-3">
+        <div class="stat-number c-violet counter" data-target="41">0</div>
+        <div class="stat-label">UI Pages</div>
+      </div>
+      <div class="card stat-card reveal reveal-delay-4">
+        <div class="stat-number c-emerald counter" data-target="33">0</div>
+        <div class="stat-label">Database Tables</div>
+      </div>
+    </div>
+
+    <div class="progress-section reveal reveal-delay-2">
+      <div class="card">
+        <h3 style="font-size:18px;font-weight:700;margin-bottom:28px;letter-spacing:-0.3px;">ความคืบหน้าแต่ละส่วน</h3>
+
+        <div class="progress-group">
+          <div class="progress-header">
+            <span class="progress-name">Backend API &amp; Services</span>
+            <span class="progress-pct">85%</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill gold-grad" data-width="85"></div></div>
+        </div>
+
+        <div class="progress-group">
+          <div class="progress-header">
+            <span class="progress-name">Admin Dashboard</span>
+            <span class="progress-pct">80%</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill sky-grad" data-width="80"></div></div>
+        </div>
+
+        <div class="progress-group">
+          <div class="progress-header">
+            <span class="progress-name">Member UI / UX</span>
+            <span class="progress-pct">65%</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill violet-grad" data-width="65"></div></div>
+        </div>
+
+        <div class="progress-group">
+          <div class="progress-header">
+            <span class="progress-name">Testing &amp; QA</span>
+            <span class="progress-pct">40%</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill emerald-grad" data-width="40"></div></div>
+        </div>
+
+        <div class="progress-group">
+          <div class="progress-header">
+            <span class="progress-name">Deployment &amp; DevOps</span>
+            <span class="progress-pct">60%</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill amber-grad" data-width="60"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="separator"></div>
+
+<!-- ══════════ FEATURES ══════════ -->
+<section class="section" id="features">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-eyebrow">Core Features</div>
+      <h2 class="section-title">ฟีเจอร์หลักของระบบ</h2>
+      <p class="section-subtitle">ออกแบบมาเพื่อตอบโจทย์ธุรกิจหวยออนไลน์อย่างครบถ้วน</p>
+    </div>
+
+    <div class="features-grid">
+      <!-- 1 -->
+      <div class="card feature-card reveal reveal-delay-1">
+        <div class="icon-wrap gold-bg">🎰</div>
+        <h3>หวยหลายประเภท</h3>
+        <p class="desc">รองรับหวยรัฐบาลไทย, ยี่กี 144 รอบ/วัน, หวยลาว, ฮานอย, มาเลเซีย พร้อมระบบ Scrape ผลอัตโนมัติจาก 6 แหล่งข้อมูล</p>
+        <div class="tags">
+          <span class="tag tag--gold">หวยรัฐบาล</span>
+          <span class="tag tag--amber">ยี่กี</span>
+          <span class="tag tag--cyan">หวยต่างประเทศ</span>
+        </div>
+      </div>
+      <!-- 2 -->
+      <div class="card feature-card reveal reveal-delay-2">
+        <div class="icon-wrap sky-bg">💳</div>
+        <h3>ฝาก-ถอนอัตโนมัติ</h3>
+        <p class="desc">SMS Auto-Deposit รองรับ 15 ธนาคารไทย + PromptPay จับคู่ยอดอัตโนมัติ เงินเข้าทันที ไม่ต้องแจ้งสลิป</p>
+        <div class="tags">
+          <span class="tag tag--emerald">Auto-Deposit</span>
+          <span class="tag tag--sky">15 ธนาคาร</span>
+          <span class="tag tag--cyan">PromptPay</span>
+        </div>
+      </div>
+      <!-- 3 -->
+      <div class="card feature-card reveal reveal-delay-3">
+        <div class="icon-wrap rose-bg">🛡️</div>
+        <h3>บริหารความเสี่ยงอัจฉริยะ</h3>
+        <p class="desc">Risk Engine วิเคราะห์พฤติกรรม แบ่งระดับผู้เล่น 5 ระดับ ควบคุมอัตราจ่าย ปรับเรทอัตโนมัติทุก 5 นาที</p>
+        <div class="tags">
+          <span class="tag tag--rose">Risk Profiling</span>
+          <span class="tag tag--amber">Win Rate Control</span>
+          <span class="tag tag--violet">Auto-Balance</span>
+        </div>
+      </div>
+      <!-- 4 -->
+      <div class="card feature-card reveal reveal-delay-1">
+        <div class="icon-wrap emerald-bg">📊</div>
+        <h3>แดชบอร์ดผู้ดูแล</h3>
+        <p class="desc">Real-time Dashboard แสดงยอดรับ-จ่าย กำไร-ขาดทุน สถิติสมาชิก พร้อมจัดการทุกอย่างจากศูนย์กลาง</p>
+        <div class="tags">
+          <span class="tag tag--emerald">Real-time P&amp;L</span>
+          <span class="tag tag--sky">Member Mgmt</span>
+          <span class="tag tag--gold">Finance Reports</span>
+        </div>
+      </div>
+      <!-- 5 -->
+      <div class="card feature-card reveal reveal-delay-2">
+        <div class="icon-wrap violet-bg">🎮</div>
+        <h3>Gamification &amp; VIP</h3>
+        <p class="desc">VIP 5 ระดับ (Bronze → Diamond), ภารกิจรายวัน/สัปดาห์, เหรียญตรา, วงล้อโชคดี เพิ่มการมีส่วนร่วมของผู้เล่น</p>
+        <div class="tags">
+          <span class="tag tag--violet">VIP Levels</span>
+          <span class="tag tag--amber">Missions</span>
+          <span class="tag tag--cyan">Badges</span>
+          <span class="tag tag--gold">Lucky Spin</span>
+        </div>
+      </div>
+      <!-- 6 -->
+      <div class="card feature-card reveal reveal-delay-3">
+        <div class="icon-wrap cyan-bg">👥</div>
+        <h3>ระบบ Affiliate</h3>
+        <p class="desc">แนะนำเพื่อน คำนวณค่าคอมมิชชั่นอัตโนมัติ ดูสถิติและรายรับ ถอนคอมฯ ได้ทันที</p>
+        <div class="tags">
+          <span class="tag tag--cyan">Referral Tracking</span>
+          <span class="tag tag--emerald">Auto Commission</span>
+          <span class="tag tag--gold">Dashboard</span>
+        </div>
+      </div>
+      <!-- 7 -->
+      <div class="card feature-card reveal reveal-delay-1">
+        <div class="icon-wrap amber-bg">📱</div>
+        <h3>Firebase OTP Authentication</h3>
+        <p class="desc">สมัคร/เข้าสู่ระบบด้วยเบอร์มือถือ ยืนยัน OTP ผ่าน Firebase ปลอดภัย สะดวก ไม่ต้องจำรหัสผ่าน</p>
+        <div class="tags">
+          <span class="tag tag--amber">Firebase Auth</span>
+          <span class="tag tag--sky">Phone OTP</span>
+          <span class="tag tag--emerald">reCAPTCHA</span>
+        </div>
+      </div>
+      <!-- 8 -->
+      <div class="card feature-card reveal reveal-delay-2">
+        <div class="icon-wrap sky-bg">⚡</div>
+        <h3>Real-time WebSocket</h3>
+        <p class="desc">แจ้งเตือนทันทีผ่าน WebSocket — ผลหวยออก ยอดเงินเข้า สถานะการเดิมพัน อัพเดทแบบ Real-time</p>
+        <div class="tags">
+          <span class="tag tag--sky">Laravel Reverb</span>
+          <span class="tag tag--violet">WebSocket</span>
+          <span class="tag tag--emerald">Live Updates</span>
+        </div>
+      </div>
+      <!-- 9 -->
+      <div class="card feature-card reveal reveal-delay-3">
+        <div class="icon-wrap gold-bg">🌏</div>
+        <h3>รองรับหลายภาษา</h3>
+        <p class="desc">รองรับ 5 ภาษา — ไทย, อังกฤษ, ลาว, เมียนมาร์, กัมพูชา พร้อม Dark/Light Mode สวิตช์ได้ทันที</p>
+        <div class="tags">
+          <span class="tag tag--gold">5 ภาษา</span>
+          <span class="tag tag--sky">Dark Mode</span>
+          <span class="tag tag--violet">Responsive</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="separator"></div>
+
+<!-- ══════════ ROADMAP ══════════ -->
+<section class="section" id="roadmap">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-eyebrow">Development Roadmap</div>
+      <h2 class="section-title">แผนพัฒนา 4 สัปดาห์</h2>
+      <p class="section-subtitle">แผนงานละเอียดสำหรับการพัฒนาให้สมบูรณ์พร้อมใช้งานจริง</p>
+    </div>
+
+    <div class="timeline">
+      <!-- Week 1 -->
+      <div class="tl-item reveal">
+        <div class="tl-dot tl-dot--1">1</div>
+        <div class="tl-card">
+          <div class="tl-top">
+            <span class="tl-week">สัปดาห์ที่ 1 — Foundation &amp; Core Polish</span>
+            <span class="tl-dates">01 – 07 MAR</span>
+          </div>
+          <h3 class="tl-title">ปรับปรุง UI/UX และระบบหลัก</h3>
+          <p class="tl-desc">ปรับแต่ง UI สมาชิกให้สมบูรณ์ ทำหน้าเดิมพันให้ลื่นไหล เพิ่ม Livewire Component สำหรับ Real-time และทำ PWA</p>
+          <ul class="tl-tasks">
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>ปรับปรุงหน้าเดิมพันหวย — เลือกประเภท, กรอกเลข, เลือกอัตราจ่าย (Livewire)</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>พัฒนาหน้าแสดงผลหวยแบบ Live พร้อม Animation ลูกบอลหมุน</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>ทำ Responsive Design สำหรับมือถือทุกหน้า (Mobile-First)</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>สร้าง PWA Service Worker + Offline Support + Install Prompt</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>ปรับปรุงระบบ SMS Auto-Deposit ให้เสถียร + Retry Mechanism</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>พัฒนาหน้า Lucky Spin พร้อมอนิเมชั่นวงล้อหมุน</li>
+          </ul>
+          <div class="tl-deliverables">
+            <div class="tl-deliverables-label">Deliverables</div>
+            <div class="tags">
+              <span class="tag tag--gold">Member Betting UI</span>
+              <span class="tag tag--emerald">Live Results Page</span>
+              <span class="tag tag--violet">PWA Ready</span>
+              <span class="tag tag--cyan">Lucky Spin</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Week 2 -->
+      <div class="tl-item reveal">
+        <div class="tl-dot tl-dot--2">2</div>
+        <div class="tl-card">
+          <div class="tl-top">
+            <span class="tl-week">สัปดาห์ที่ 2 — Advanced Features</span>
+            <span class="tl-dates">08 – 14 MAR</span>
+          </div>
+          <h3 class="tl-title">ฟีเจอร์ขั้นสูงและ AI</h3>
+          <p class="tl-desc">เพิ่มระบบวิเคราะห์เลข AI, แชทในระบบ, Push Notifications และระบบแจ้งเตือนผ่าน LINE</p>
+          <ul class="tl-tasks">
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>พัฒนา AI Number Analysis Dashboard — เลขร้อน/เลขเย็น, สถิติ, แนะนำเลข</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>สร้างระบบแชทในแอป + ส่งข้อความระหว่าง Admin กับสมาชิก</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>เชื่อมต่อ LINE Notify — แจ้งเตือนผลหวย, ยอดเงินเข้า-ออก</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>พัฒนา Push Notifications (Web + Mobile Browser)</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>สร้างระบบ Group/Syndicate Betting — เล่นหวยเป็นกลุ่มแบ่งรางวัล</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>พัฒนา Personal Analytics — กราฟรายรับ-รายจ่ายของสมาชิก</li>
+          </ul>
+          <div class="tl-deliverables">
+            <div class="tl-deliverables-label">Deliverables</div>
+            <div class="tags">
+              <span class="tag tag--sky">AI Number Analysis</span>
+              <span class="tag tag--amber">LINE Integration</span>
+              <span class="tag tag--violet">In-App Chat</span>
+              <span class="tag tag--emerald">Group Betting</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Week 3 -->
+      <div class="tl-item reveal">
+        <div class="tl-dot tl-dot--3">3</div>
+        <div class="tl-card">
+          <div class="tl-top">
+            <span class="tl-week">สัปดาห์ที่ 3 — Testing &amp; Optimization</span>
+            <span class="tl-dates">15 – 21 MAR</span>
+          </div>
+          <h3 class="tl-title">ทดสอบและเพิ่มประสิทธิภาพ</h3>
+          <p class="tl-desc">เขียน Test ครอบคลุม 80%, ทำ Performance Optimization, Security Audit และ Load Testing</p>
+          <ul class="tl-tasks">
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>เขียน Feature Tests ครอบคลุมทุก API Endpoint (เป้าหมาย 80% Coverage)</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>Security Audit — SQL Injection, XSS, CSRF, Rate Limiting, Auth Bypass</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>Performance Optimization — Query N+1, Redis Caching, DB Index Tuning</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>Load Testing — ทดสอบรองรับ 1,000+ Concurrent Users</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>ปรับแต่ง Admin Reports — Export PDF / Excel รายงานการเงิน</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>Integration Test — ทดสอบ Flow ทั้งหมดแบบ End-to-End</li>
+          </ul>
+          <div class="tl-deliverables">
+            <div class="tl-deliverables-label">Deliverables</div>
+            <div class="tags">
+              <span class="tag tag--emerald">80% Test Coverage</span>
+              <span class="tag tag--rose">Security Audit</span>
+              <span class="tag tag--sky">Performance Report</span>
+              <span class="tag tag--gold">PDF/Excel Export</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Week 4 -->
+      <div class="tl-item reveal">
+        <div class="tl-dot tl-dot--4">4</div>
+        <div class="tl-card">
+          <div class="tl-top">
+            <span class="tl-week">สัปดาห์ที่ 4 — Deployment &amp; Launch</span>
+            <span class="tl-dates">22 – 31 MAR</span>
+          </div>
+          <h3 class="tl-title">เปิดตัวระบบ Production</h3>
+          <p class="tl-desc">Deploy สู่ Production Server, ทดสอบจริงกับกลุ่มผู้ใช้ Beta, ปรับแก้บั๊กสุดท้าย และส่งมอบงาน</p>
+          <ul class="tl-tasks">
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>Setup Production Server — Docker Compose + SSL + CDN + Firewall</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>CI/CD Pipeline — Auto Deploy เมื่อ Push to Main (GitHub Actions)</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>Beta Testing กับกลุ่มผู้ใช้จริง 50 คน — เก็บ Feedback</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>Monitoring &amp; Alerting — Server Health, Error Tracking (Sentry)</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>จัดทำเอกสาร — คู่มือผู้ดูแลระบบ + API Documentation</li>
+            <li class="tl-task"><span class="bullet bullet--pending">○</span>ส่งมอบระบบ พร้อมอบรมการใช้งาน + ซัพพอร์ต 30 วัน</li>
+          </ul>
+          <div class="tl-deliverables">
+            <div class="tl-deliverables-label">Deliverables</div>
+            <div class="tags">
+              <span class="tag tag--emerald">Production Server</span>
+              <span class="tag tag--sky">CI/CD Pipeline</span>
+              <span class="tag tag--gold">Documentation</span>
+              <span class="tag tag--violet">Training</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="separator"></div>
+
+<!-- ══════════ BUDGET ══════════ -->
+<section class="section" id="budget">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-eyebrow">Investment</div>
+      <h2 class="section-title">งบประมาณโครงการ</h2>
+      <p class="section-subtitle">แผนงบประมาณโปร่งใส แบ่งตามหมวดหมู่ชัดเจน</p>
+    </div>
+
+    <div class="budget-wrap reveal-scale">
+      <div class="budget-head">
+        <h3>รายละเอียดงบประมาณ</h3>
+        <p>ระยะเวลา 30 วัน — มีนาคม 2026</p>
+      </div>
+      <table class="budget-tbl">
+        <thead>
+          <tr>
+            <th>รายการ</th>
+            <th>จำนวน (บาท)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <span class="budget-icon" style="background:rgba(56,189,248,0.1)">🎨</span>
+              <span class="budget-item-name">UI/UX Development</span>
+              <div class="budget-item-desc" style="margin-left:50px;">ปรับปรุงหน้าสมาชิก, Responsive, PWA, Livewire Components</div>
+            </td>
+            <td>45,000</td>
+          </tr>
+          <tr>
+            <td>
+              <span class="budget-icon" style="background:rgba(167,139,250,0.1)">⚙️</span>
+              <span class="budget-item-name">Backend Features</span>
+              <div class="budget-item-desc" style="margin-left:50px;">AI Analysis, Chat, Group Betting, LINE Notify, Push Notifications</div>
+            </td>
+            <td>55,000</td>
+          </tr>
+          <tr>
+            <td>
+              <span class="budget-icon" style="background:rgba(52,211,153,0.1)">🧪</span>
+              <span class="budget-item-name">Testing &amp; QA</span>
+              <div class="budget-item-desc" style="margin-left:50px;">Unit/Feature Tests, Security Audit, Load Testing, E2E</div>
+            </td>
+            <td>30,000</td>
+          </tr>
+          <tr>
+            <td>
+              <span class="budget-icon" style="background:rgba(212,175,55,0.1)">🚀</span>
+              <span class="budget-item-name">Deployment &amp; DevOps</span>
+              <div class="budget-item-desc" style="margin-left:50px;">Server Setup, CI/CD, Monitoring, SSL, CDN</div>
+            </td>
+            <td>25,000</td>
+          </tr>
+          <tr>
+            <td>
+              <span class="budget-icon" style="background:rgba(34,211,238,0.1)">🏗️</span>
+              <span class="budget-item-name">Infrastructure</span>
+              <div class="budget-item-desc" style="margin-left:50px;">Cloud Server, Domain, CDN, SMS Credits (3 เดือน)</div>
+            </td>
+            <td>20,000</td>
+          </tr>
+          <tr>
+            <td>
+              <span class="budget-icon" style="background:rgba(251,191,36,0.1)">📖</span>
+              <span class="budget-item-name">Documentation &amp; Training</span>
+              <div class="budget-item-desc" style="margin-left:50px;">คู่มือ Admin, API Docs, อบรมการใช้งาน</div>
+            </td>
+            <td>15,000</td>
+          </tr>
+          <tr>
+            <td>
+              <span class="budget-icon" style="background:rgba(251,113,133,0.1)">🔧</span>
+              <span class="budget-item-name">Contingency &amp; Support</span>
+              <div class="budget-item-desc" style="margin-left:50px;">แก้บั๊กหลังส่งมอบ ซัพพอร์ตฟรี 30 วัน</div>
+            </td>
+            <td>10,000</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="budget-total-row">
+        <div class="budget-total-label">รวมทั้งหมด</div>
+        <div class="budget-total-val">฿200,000</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="separator"></div>
+
+<!-- ══════════ TECH STACK ══════════ -->
+<section class="section" id="tech">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-eyebrow">Technology</div>
+      <h2 class="section-title">เทคโนโลยีที่ใช้</h2>
+      <p class="section-subtitle">สร้างบนเทคโนโลยีที่ทันสมัย เสถียร และรองรับการเติบโต</p>
+    </div>
+
+    <div class="tech-grid">
+      <div class="tech-pill reveal reveal-delay-1">
+        <div class="tech-pill-icon" style="background:rgba(239,68,68,0.1);color:#ef4444">L</div>
+        <div><div class="tech-pill-name">Laravel</div><div class="tech-pill-ver">v12 — PHP Framework</div></div>
+      </div>
+      <div class="tech-pill reveal reveal-delay-2">
+        <div class="tech-pill-icon" style="background:rgba(139,92,246,0.1);color:#a78bfa">P</div>
+        <div><div class="tech-pill-name">PHP</div><div class="tech-pill-ver">v8.3 — Backend Runtime</div></div>
+      </div>
+      <div class="tech-pill reveal reveal-delay-3">
+        <div class="tech-pill-icon" style="background:rgba(6,182,212,0.1);color:#22d3ee">T</div>
+        <div><div class="tech-pill-name">Tailwind CSS</div><div class="tech-pill-ver">v4 — Utility-First CSS</div></div>
+      </div>
+      <div class="tech-pill reveal reveal-delay-4">
+        <div class="tech-pill-icon" style="background:rgba(56,189,248,0.1);color:#38bdf8">A</div>
+        <div><div class="tech-pill-name">Alpine.js</div><div class="tech-pill-ver">v3.14 — Reactive UI</div></div>
+      </div>
+      <div class="tech-pill reveal reveal-delay-5">
+        <div class="tech-pill-icon" style="background:rgba(251,191,36,0.1);color:#fbbf24">F</div>
+        <div><div class="tech-pill-name">Firebase</div><div class="tech-pill-ver">v11 — Phone Auth &amp; OTP</div></div>
+      </div>
+      <div class="tech-pill reveal reveal-delay-6">
+        <div class="tech-pill-icon" style="background:rgba(52,211,153,0.1);color:#34d399">M</div>
+        <div><div class="tech-pill-name">MySQL</div><div class="tech-pill-ver">v8.0 — Relational DB</div></div>
+      </div>
+      <div class="tech-pill reveal reveal-delay-7">
+        <div class="tech-pill-icon" style="background:rgba(239,68,68,0.1);color:#dc2626">R</div>
+        <div><div class="tech-pill-name">Redis</div><div class="tech-pill-ver">v7 — Cache &amp; Queue</div></div>
+      </div>
+      <div class="tech-pill reveal reveal-delay-8">
+        <div class="tech-pill-icon" style="background:rgba(212,175,55,0.1);color:#d4af37">V</div>
+        <div><div class="tech-pill-name">Vite</div><div class="tech-pill-ver">v6 — Build Tool</div></div>
+      </div>
+      <div class="tech-pill reveal reveal-delay-1">
+        <div class="tech-pill-icon" style="background:rgba(167,139,250,0.1);color:#a78bfa">Lw</div>
+        <div><div class="tech-pill-name">Livewire</div><div class="tech-pill-ver">v3 — Real-time Components</div></div>
+      </div>
+      <div class="tech-pill reveal reveal-delay-2">
+        <div class="tech-pill-icon" style="background:rgba(56,189,248,0.1);color:#60a5fa">D</div>
+        <div><div class="tech-pill-name">Docker</div><div class="tech-pill-ver">Multi-Service Compose</div></div>
+      </div>
+      <div class="tech-pill reveal reveal-delay-3">
+        <div class="tech-pill-icon" style="background:rgba(52,211,153,0.1);color:#4ade80">Rv</div>
+        <div><div class="tech-pill-name">Laravel Reverb</div><div class="tech-pill-ver">WebSocket Server</div></div>
+      </div>
+      <div class="tech-pill reveal reveal-delay-4">
+        <div class="tech-pill-icon" style="background:rgba(34,211,238,0.1);color:#22d3ee">GH</div>
+        <div><div class="tech-pill-name">GitHub Actions</div><div class="tech-pill-ver">CI/CD Pipeline</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="separator"></div>
+
+<!-- ══════════ WHY CHOOSE US ══════════ -->
+<section class="section" id="why">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <div class="section-eyebrow">Why Choose Us</div>
+      <h2 class="section-title">ทำไมต้องเลือกเรา</h2>
+      <p class="section-subtitle">เรามอบสิ่งที่ดีที่สุดให้กับโครงการของคุณ</p>
+    </div>
+
+    <div class="why-grid">
+      <div class="card why-card reveal reveal-delay-1">
+        <span class="why-icon">🏆</span>
+        <h4>พัฒนาแล้ว 70%</h4>
+        <p>ไม่ได้เริ่มจากศูนย์ ระบบหลักพร้อมใช้งาน ลดเวลาและความเสี่ยง ส่งมอบเร็วกว่าสร้างใหม่ถึง 3 เท่า</p>
+      </div>
+      <div class="card why-card reveal reveal-delay-2">
+        <span class="why-icon">🔒</span>
+        <h4>ปลอดภัยระดับสูง</h4>
+        <p>เข้ารหัส AES-256-GCM ป้องกัน SQL Injection, XSS, CSRF ครบถ้วน ผ่าน Security Audit ก่อนส่งมอบ</p>
+      </div>
+      <div class="card why-card reveal reveal-delay-3">
+        <span class="why-icon">📈</span>
+        <h4>รองรับการเติบโต</h4>
+        <p>สถาปัตยกรรม Scalable รองรับ 10,000+ สมาชิก Queue System จัดการ Background Jobs, Redis Cache ลด Load</p>
+      </div>
+      <div class="card why-card reveal reveal-delay-4">
+        <span class="why-icon">🛠️</span>
+        <h4>ซัพพอร์ต 30 วัน</h4>
+        <p>หลังส่งมอบ รับแก้บั๊กฟรี 30 วัน พร้อมคู่มือใช้งานละเอียด และอบรมการดูแลระบบ</p>
+      </div>
+      <div class="card why-card reveal reveal-delay-5">
+        <span class="why-icon">📱</span>
+        <h4>Mobile-First PWA</h4>
+        <p>ออกแบบเพื่อมือถือเป็นหลัก ติดตั้งบนหน้าจอเหมือนแอป ไม่ต้องโหลดจาก Store ใช้งานได้ทุกแพลตฟอร์ม</p>
+      </div>
+      <div class="card why-card reveal reveal-delay-6">
+        <span class="why-icon">🤖</span>
+        <h4>AI-Powered</h4>
+        <p>ระบบวิเคราะห์เลขอัจฉริยะ Risk Engine ปรับเรทอัตโนมัติ ตรวจจับพฤติกรรมผิดปกติ ลดความเสี่ยงทางธุรกิจ</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="separator"></div>
+
+<!-- ══════════ CTA ══════════ -->
+<section class="cta reveal">
+  <h2>พร้อมเริ่มต้นโครงการ<span style="color:var(--gold-300)">?</span></h2>
+  <p class="cta-sub">ติดต่อเราเพื่อหารือรายละเอียดเพิ่มเติม และเริ่มพัฒนาระบบหวยออนไลน์ของคุณ</p>
+  <div class="cta-buttons">
+    <button class="btn btn--gold">🚀 &nbsp;เริ่มต้นโครงการ</button>
+    <button class="btn btn--ghost">📞 &nbsp;นัดหมาย Demo</button>
+  </div>
+</section>
+
+<!-- ══════════ FOOTER ══════════ -->
+<div class="separator"></div>
+<footer class="footer">
+  <p style="font-size:13px;color:var(--text-secondary);">Lotto Platform — Development Proposal &copy; 2026</p>
+  <p>Confidential Document &mdash; Generated March 1, 2026 &mdash; Valid for 30 days</p>
+</footer>
+
+<!-- ══════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  /* ── Navbar scroll effect ── */
+  const nav = document.getElementById('mainNav');
+  let lastScroll = 0;
+
+  function onScroll() {
+    const y = window.scrollY;
+    nav.classList.toggle('scrolled', y > 40);
+    lastScroll = y;
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  /* ── Intersection Observer for reveals ── */
+  const revealEls = document.querySelectorAll('.reveal, .reveal-scale');
+
+  const observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+
+        // Animate progress bars inside
+        const bars = entry.target.querySelectorAll('.progress-fill[data-width]');
+        bars.forEach(function(bar) {
+          bar.style.width = bar.getAttribute('data-width') + '%';
+        });
+
+        // Animate counters
+        const counters = entry.target.querySelectorAll('.counter[data-target]');
+        counters.forEach(function(counter) {
+          animateCounter(counter);
+        });
+      }
+    });
+  }, {
+    threshold: 0.15,
+    rootMargin: '0px 0px -40px 0px'
+  });
+
+  revealEls.forEach(function(el) { observer.observe(el); });
+
+  // Also observe stat cards for counters
+  document.querySelectorAll('.stat-card, .hero-stats').forEach(function(el) {
+    if (!el.classList.contains('reveal') && !el.classList.contains('reveal-scale')) {
+      observer.observe(el);
+    }
+  });
+
+  /* ── Counter animation ── */
+  function animateCounter(el) {
+    if (el.dataset.animated) return;
+    el.dataset.animated = '1';
+
+    const target = parseInt(el.getAttribute('data-target'), 10);
+    const suffix = el.getAttribute('data-suffix') || '';
+    const duration = 1600;
+    const start = performance.now();
+
+    function step(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out expo
+      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      const current = Math.round(eased * target);
+      el.textContent = current + suffix;
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      }
+    }
+
+    requestAnimationFrame(step);
+  }
+
+  /* ── Hero counters (run on load) ── */
+  window.addEventListener('load', function() {
+    document.querySelectorAll('.hero .counter[data-target]').forEach(function(c) {
+      animateCounter(c);
+    });
+  });
+
+  /* ── Progress bars in the card that may already be visible ── */
+  window.addEventListener('load', function() {
+    document.querySelectorAll('.progress-fill[data-width]').forEach(function(bar) {
+      const rect = bar.getBoundingClientRect();
+      if (rect.top < window.innerHeight) {
+        bar.style.width = bar.getAttribute('data-width') + '%';
+      }
+    });
+  });
+
+  /* ── Smooth scroll for nav links ── */
+  document.querySelectorAll('.nav-links a[href^="#"]').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+      e.preventDefault();
+      var target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+})();
+</script>
+</body>
+</html>
